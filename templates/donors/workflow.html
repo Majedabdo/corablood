@@ -179,47 +179,237 @@
         <!-- Close Main Content Area -->
     </div>
 
-    <!-- Add Result Modal -->
+    <!-- Add Result Modal (Batch & Custom Entry) -->
     <div x-show="showAddResultModal" x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog"
         aria-modal="true">
-        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"></div>
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
         <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
-            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="flex min-h-full items-end justify-center p-3 text-center sm:items-center sm:p-4">
                 <div
-                    class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                        <div class="flex justify-between items-center mb-4 border-b pb-3">
-                            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2" id="modal-title">
-                                🧪 Add Manual Lab Result
-                            </h3>
-                            <button @click="showAddResultModal = false" class="text-slate-400 hover:text-slate-600">✕</button>
+                    class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-6 sm:w-full sm:max-w-3xl border border-slate-100">
+                    
+                    <!-- Modal Header -->
+                    <div class="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 px-6 py-4 text-white flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-blue-500/20 rounded-xl border border-blue-400/30">
+                                <svg class="w-6 h-6 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">Add Manual Lab Results / إدخال نتائج الفحوصات</h3>
+                                <p class="text-xs text-blue-200">إدخال جميع الفحوصات دفعة واحدة واختيار النتائج بضغطة زر</p>
+                            </div>
                         </div>
-                        <div class="space-y-4">
+                        <button @click="showAddResultModal = false" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">✕</button>
+                    </div>
+
+                    <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+                        <!-- Mode Switch & Quick Action Bar -->
+                        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                            <div class="flex gap-2">
+                                <button @click="batchEntryMode = 'batch'"
+                                    :class="batchEntryMode === 'batch' ? 'bg-blue-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100'"
+                                    class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                                    📋 Full Panel Batch Entry / إدخال المجموعة كاملة
+                                </button>
+                                <button @click="batchEntryMode = 'custom'"
+                                    :class="batchEntryMode === 'custom' ? 'bg-blue-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100'"
+                                    class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                                    ✏️ Single Custom Test / فحص مخصص واحد
+                                </button>
+                            </div>
+
+                            <div x-show="batchEntryMode === 'batch'" class="flex items-center gap-2">
+                                <button @click="autoFillNormalBatch()"
+                                    class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5">
+                                    <span>✨ Auto-Fill All Normal (تحديد الكل سليم)</span>
+                                </button>
+                                <button @click="clearAllBatch()"
+                                    class="px-3 py-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 text-xs font-bold rounded-xl transition">
+                                    🧹 Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Batch Entry Mode Form -->
+                        <div x-show="batchEntryMode === 'batch'" class="space-y-6">
+                            <!-- Section 1: Serology & Infectious Diseases -->
+                            <div class="bg-white rounded-2xl border border-amber-200 shadow-sm p-4 space-y-3">
+                                <div class="flex items-center justify-between border-b pb-2 border-amber-100">
+                                    <h4 class="font-bold text-amber-900 text-sm flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                                        Infectious Diseases Serology / الأمراض المعدية (Qualitative)
+                                    </h4>
+                                    <span class="text-[11px] text-amber-700 font-medium">Non-Reactive / Reactive</span>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                    <!-- HCV -->
+                                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                                        <span class="font-bold text-slate-800">Anti-HCV (HCV Ab)</span>
+                                        <select x-model="batchResults.hcv_ab"
+                                            :class="batchResults.hcv_ab === 'Reactive' ? 'bg-red-100 text-red-800 font-bold border-red-300' : 'bg-emerald-50 text-emerald-800 font-bold border-emerald-300'"
+                                            class="rounded-lg text-xs px-2.5 py-1.5 border font-semibold focus:ring-blue-500">
+                                            <option value="Non-Reactive">Non-Reactive (سليم)</option>
+                                            <option value="Reactive">Reactive (إيجابي/معدي ⚠️)</option>
+                                            <option value="">-- Skip / تجاوز --</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- HIV Combo -->
+                                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                                        <span class="font-bold text-slate-800">HIV 1/2 Ag/Ab Combo</span>
+                                        <select x-model="batchResults.hiv_combo"
+                                            :class="batchResults.hiv_combo === 'Reactive' ? 'bg-red-100 text-red-800 font-bold border-red-300' : 'bg-emerald-50 text-emerald-800 font-bold border-emerald-300'"
+                                            class="rounded-lg text-xs px-2.5 py-1.5 border font-semibold focus:ring-blue-500">
+                                            <option value="Non-Reactive">Non-Reactive (سليم)</option>
+                                            <option value="Reactive">Reactive (إيجابي/معدي ⚠️)</option>
+                                            <option value="">-- Skip / تجاوز --</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- HBsAg -->
+                                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                                        <span class="font-bold text-slate-800">HBsAg (Hepatitis B Surface Ag)</span>
+                                        <select x-model="batchResults.hbsag"
+                                            :class="batchResults.hbsag === 'Reactive' ? 'bg-red-100 text-red-800 font-bold border-red-300' : 'bg-emerald-50 text-emerald-800 font-bold border-emerald-300'"
+                                            class="rounded-lg text-xs px-2.5 py-1.5 border font-semibold focus:ring-blue-500">
+                                            <option value="Non-Reactive">Non-Reactive (سليم)</option>
+                                            <option value="Reactive">Reactive (إيجابي/معدي ⚠️)</option>
+                                            <option value="">-- Skip / تجاوز --</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Anti-HBc -->
+                                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                                        <span class="font-bold text-slate-800">Anti-HBc (HBcAb)</span>
+                                        <select x-model="batchResults.hbc_ab"
+                                            :class="batchResults.hbc_ab === 'Reactive' ? 'bg-red-100 text-red-800 font-bold border-red-300' : 'bg-emerald-50 text-emerald-800 font-bold border-emerald-300'"
+                                            class="rounded-lg text-xs px-2.5 py-1.5 border font-semibold focus:ring-blue-500">
+                                            <option value="Non-Reactive">Non-Reactive (سليم)</option>
+                                            <option value="Reactive">Reactive (إيجابي/معدي ⚠️)</option>
+                                            <option value="">-- Skip / تجاوز --</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Sickle Cell Screen -->
+                                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between md:col-span-2">
+                                        <span class="font-bold text-slate-800">HbS Screening (Sickle Cell Screen / المنجلية)</span>
+                                        <select x-model="batchResults.hbs_scr"
+                                            :class="batchResults.hbs_scr === 'Positive' ? 'bg-red-100 text-red-800 font-bold border-red-300' : 'bg-emerald-50 text-emerald-800 font-bold border-emerald-300'"
+                                            class="rounded-lg text-xs px-3 py-1.5 border font-semibold focus:ring-blue-500">
+                                            <option value="Negative">Negative (سالب / خالي)</option>
+                                            <option value="Positive">Positive (موجب / حامل لمرض المنجلية ⚠️)</option>
+                                            <option value="">-- Skip / تجاوز --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section 2: NAT Nucleic Acid Testing -->
+                            <div class="bg-white rounded-2xl border border-indigo-200 shadow-sm p-4 space-y-3">
+                                <div class="flex items-center justify-between border-b pb-2 border-indigo-100">
+                                    <h4 class="font-bold text-indigo-900 text-sm flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-indigo-500"></span>
+                                        Nucleic Acid Testing (NAT) / الفحص الجزيئي
+                                    </h4>
+                                    <span class="text-[11px] text-indigo-700 font-medium">Not Detected / Detected</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                                    <!-- HIV-1 RNA -->
+                                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                                        <span class="font-bold text-slate-800 block">HIV-1 RNA (NAT)</span>
+                                        <select x-model="batchResults.nat_hiv1"
+                                            :class="batchResults.nat_hiv1 === 'Detected' ? 'bg-red-100 text-red-800 font-bold border-red-300' : 'bg-emerald-50 text-emerald-800 font-bold border-emerald-300'"
+                                            class="w-full rounded-lg text-xs px-2 py-1.5 border font-semibold focus:ring-blue-500">
+                                            <option value="Not Detected">Not Detected (غير مكتشف)</option>
+                                            <option value="Detected">Detected (مكتشف ⚠️)</option>
+                                            <option value="">-- Skip --</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- HCV RNA -->
+                                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                                        <span class="font-bold text-slate-800 block">HCV RNA (NAT)</span>
+                                        <select x-model="batchResults.nat_hcv"
+                                            :class="batchResults.nat_hcv === 'Detected' ? 'bg-red-100 text-red-800 font-bold border-red-300' : 'bg-emerald-50 text-emerald-800 font-bold border-emerald-300'"
+                                            class="w-full rounded-lg text-xs px-2 py-1.5 border font-semibold focus:ring-blue-500">
+                                            <option value="Not Detected">Not Detected (غير مكتشف)</option>
+                                            <option value="Detected">Detected (مكتشف ⚠️)</option>
+                                            <option value="">-- Skip --</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- HBV DNA -->
+                                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                                        <span class="font-bold text-slate-800 block">HBV DNA (NAT)</span>
+                                        <select x-model="batchResults.nat_hbv"
+                                            :class="batchResults.nat_hbv === 'Detected' ? 'bg-red-100 text-red-800 font-bold border-red-300' : 'bg-emerald-50 text-emerald-800 font-bold border-emerald-300'"
+                                            class="w-full rounded-lg text-xs px-2 py-1.5 border font-semibold focus:ring-blue-500">
+                                            <option value="Not Detected">Not Detected (غير مكتشف)</option>
+                                            <option value="Detected">Detected (مكتشف ⚠️)</option>
+                                            <option value="">-- Skip --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section 3: Immunohematology (Blood Grouping) -->
+                            <div class="bg-white rounded-2xl border border-red-200 shadow-sm p-4 space-y-3">
+                                <div class="flex items-center justify-between border-b pb-2 border-red-100">
+                                    <h4 class="font-bold text-red-900 text-sm flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                                        Immunohematology / فصيلة الدم والعامل الرايزيسي
+                                    </h4>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                    <!-- ABO Group -->
+                                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                                        <span class="font-bold text-slate-800">ABO Blood Group</span>
+                                        <select x-model="batchResults.abo" class="rounded-lg text-xs px-3 py-1.5 border border-slate-300 font-bold text-blue-900 focus:ring-blue-500">
+                                            <option value="O">O</option>
+                                            <option value="A">A</option>
+                                            <option value="B">B</option>
+                                            <option value="AB">AB</option>
+                                            <option value="">-- Skip --</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Rh Type -->
+                                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                                        <span class="font-bold text-slate-800">Rh Type (RhD)</span>
+                                        <select x-model="batchResults.rh" class="rounded-lg text-xs px-3 py-1.5 border border-slate-300 font-bold text-emerald-800 focus:ring-blue-500">
+                                            <option value="Positive">Positive (+)</option>
+                                            <option value="Negative">Negative (-)</option>
+                                            <option value="">-- Skip --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Single Custom Test Entry Mode Form -->
+                        <div x-show="batchEntryMode === 'custom'" class="space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                             <!-- Preset Dropdown -->
-                            <div class="bg-blue-50 p-3 rounded-xl border border-blue-200">
+                            <div>
                                 <label class="block text-xs font-bold text-blue-900 uppercase tracking-wider mb-1">Quick Select Test Preset / اختر فحص جاهز</label>
                                 <select @change="applyTestPreset($event.target.value)" class="w-full text-xs rounded-lg border-blue-300 focus:ring-blue-500 font-medium">
                                     <option value="">-- Choose Standard Test Preset --</option>
-                                    <optgroup label="Serology & Infectious Diseases">
-                                        <option value="HCV_AB">Anti-HCV (HCV Ab)</option>
-                                        <option value="HIV_COMBO">HIV 1/2 Ag/Ab Combo</option>
-                                        <option value="HBSAG">HBsAg (Hepatitis B Surface Ag)</option>
-                                        <option value="HBC_AB">Anti-HBc (HBcAb)</option>
-                                        <option value="HBS_SCR">HbS Screening (Sickle Cell Screen)</option>
-                                    </optgroup>
-                                    <optgroup label="Nucleic Acid Testing (NAT)">
-                                        <option value="NAT_HIV1">HIV-1 RNA (NAT)</option>
-                                        <option value="NAT_HCV">HCV RNA (NAT)</option>
-                                        <option value="NAT_HBV">HBV DNA (NAT)</option>
-                                    </optgroup>
-                                    <optgroup label="Immunohematology">
-                                        <option value="ABO_GRP">ABO Group</option>
-                                        <option value="RH_TYPE">Rh Type (RhD)</option>
-                                    </optgroup>
-                                    <optgroup label="CBC (Complete Blood Count)">
-                                        <option value="CBC_HB">Hemoglobin (Hb)</option>
-                                        <option value="CBC_PLT">Platelets</option>
-                                    </optgroup>
+                                    <option value="HCV_AB">Anti-HCV (HCV Ab)</option>
+                                    <option value="HIV_COMBO">HIV 1/2 Ag/Ab Combo</option>
+                                    <option value="HBSAG">HBsAg (Hepatitis B Surface Ag)</option>
+                                    <option value="HBC_AB">Anti-HBc (HBcAb)</option>
+                                    <option value="HBS_SCR">HbS Screening (Sickle Cell Screen)</option>
+                                    <option value="NAT_HIV1">HIV-1 RNA (NAT)</option>
+                                    <option value="NAT_HCV">HCV RNA (NAT)</option>
+                                    <option value="NAT_HBV">HBV DNA (NAT)</option>
+                                    <option value="ABO_GRP">ABO Group</option>
+                                    <option value="RH_TYPE">Rh Type (RhD)</option>
+                                    <option value="CBC_HB">Hemoglobin (Hb)</option>
+                                    <option value="CBC_PLT">Platelets</option>
                                 </select>
                             </div>
 
@@ -227,13 +417,13 @@
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 mb-1">Test Code</label>
                                     <input type="text" x-model="newResult.test_code"
-                                        class="w-full rounded-lg border-slate-300 focus:ring-brand-500 focus:border-brand-500 text-xs font-mono"
+                                        class="w-full rounded-lg border-slate-300 focus:ring-blue-500 text-xs font-mono"
                                         placeholder="e.g. HCV_AB">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 mb-1">Test Name</label>
                                     <input type="text" x-model="newResult.test_name"
-                                        class="w-full rounded-lg border-slate-300 focus:ring-brand-500 focus:border-brand-500 text-xs"
+                                        class="w-full rounded-lg border-slate-300 focus:ring-blue-500 text-xs"
                                         placeholder="e.g. Anti-HCV">
                                 </div>
                             </div>
@@ -241,11 +431,11 @@
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">Result Value / قيمة النتيجة</label>
                                 <input type="text" x-model="newResult.result_value"
-                                    class="w-full rounded-lg border-slate-300 focus:ring-brand-500 focus:border-brand-500 text-xs font-semibold"
+                                    class="w-full rounded-lg border-slate-300 focus:ring-blue-500 text-xs font-semibold"
                                     placeholder="e.g. Non-Reactive / Negative / Not Detected / 14.5">
                             </div>
 
-                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                            <div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between">
                                 <div>
                                     <label for="is_abnormal" class="text-xs font-bold text-slate-800 block">Flag as Abnormal / Reactive?</label>
                                     <span class="text-[10px] text-slate-500">تحديد النتيجة كإيجابية/تستوجب العزل أو الإتلاف</span>
@@ -255,14 +445,19 @@
                             </div>
                         </div>
                     </div>
-                    <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                        <button @click="saveManualResult()" type="button"
-                            class="inline-flex w-full justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto">
-                            Save Result / حفظ النتيجة
+
+                    <!-- Modal Footer -->
+                    <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-wrap sm:flex-row-reverse gap-3 justify-between items-center">
+                        <button @click="saveBatchLabResults()" type="button"
+                            class="inline-flex w-full justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-blue-700 sm:w-auto transition flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Save All Selected Results / حفظ جميع الفحوصات المحددة
                         </button>
                         <button @click="showAddResultModal = false" type="button"
-                            class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto">
-                            Cancel
+                            class="inline-flex w-full justify-center rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:w-auto transition">
+                            Cancel / إلغاء
                         </button>
                     </div>
                 </div>

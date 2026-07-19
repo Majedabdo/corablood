@@ -454,14 +454,147 @@
                 result_value: '',
                 is_abnormal: false
             },
+            batchEntryMode: 'batch',
+            batchResults: {
+                hcv_ab: 'Non-Reactive',
+                hiv_combo: 'Non-Reactive',
+                hbsag: 'Non-Reactive',
+                hbc_ab: 'Non-Reactive',
+                hbs_scr: 'Negative',
+                nat_hiv1: 'Not Detected',
+                nat_hcv: 'Not Detected',
+                nat_hbv: 'Not Detected',
+                abo: 'O',
+                rh: 'Positive'
+            },
             openAddResultModal() {
-                this.newResult = {
-                    test_code: '',
-                    test_name: '',
-                    result_value: '',
-                    is_abnormal: false
-                };
+                this.autoFillNormalBatch();
                 this.showAddResultModal = true;
+            },
+            autoFillNormalBatch() {
+                this.batchResults = {
+                    hcv_ab: 'Non-Reactive',
+                    hiv_combo: 'Non-Reactive',
+                    hbsag: 'Non-Reactive',
+                    hbc_ab: 'Non-Reactive',
+                    hbs_scr: 'Negative',
+                    nat_hiv1: 'Not Detected',
+                    nat_hcv: 'Not Detected',
+                    nat_hbv: 'Not Detected',
+                    abo: 'O',
+                    rh: 'Positive'
+                };
+            },
+            clearAllBatch() {
+                this.batchResults = {
+                    hcv_ab: '', hiv_combo: '', hbsag: '', hbc_ab: '', hbs_scr: '',
+                    nat_hiv1: '', nat_hcv: '', nat_hbv: '', abo: '', rh: ''
+                };
+            },
+            async saveBatchLabResults() {
+                if (this.batchEntryMode === 'custom') {
+                    return this.saveManualResult();
+                }
+
+                const resultsToSave = [];
+                if (this.batchResults.hcv_ab) {
+                    resultsToSave.push({
+                        test_code: 'HCV_AB', test_name: 'Anti-HCV (HCV Ab)',
+                        result_value: this.batchResults.hcv_ab,
+                        is_abnormal: (this.batchResults.hcv_ab === 'Reactive')
+                    });
+                }
+                if (this.batchResults.hiv_combo) {
+                    resultsToSave.push({
+                        test_code: 'HIV_COMBO', test_name: 'HIV 1/2 Ag/Ab Combo',
+                        result_value: this.batchResults.hiv_combo,
+                        is_abnormal: (this.batchResults.hiv_combo === 'Reactive')
+                    });
+                }
+                if (this.batchResults.hbsag) {
+                    resultsToSave.push({
+                        test_code: 'HBSAG', test_name: 'HBsAg (Hepatitis B Surface Ag)',
+                        result_value: this.batchResults.hbsag,
+                        is_abnormal: (this.batchResults.hbsag === 'Reactive')
+                    });
+                }
+                if (this.batchResults.hbc_ab) {
+                    resultsToSave.push({
+                        test_code: 'HBC_AB', test_name: 'Anti-HBc (HBcAb)',
+                        result_value: this.batchResults.hbc_ab,
+                        is_abnormal: (this.batchResults.hbc_ab === 'Reactive')
+                    });
+                }
+                if (this.batchResults.hbs_scr) {
+                    resultsToSave.push({
+                        test_code: 'HBS_SCR', test_name: 'HbS Screening (Sickle Cell Screen)',
+                        result_value: this.batchResults.hbs_scr,
+                        is_abnormal: (this.batchResults.hbs_scr === 'Positive')
+                    });
+                }
+                if (this.batchResults.nat_hiv1) {
+                    resultsToSave.push({
+                        test_code: 'NAT_HIV1', test_name: 'HIV-1 RNA (NAT)',
+                        result_value: this.batchResults.nat_hiv1,
+                        is_abnormal: (this.batchResults.nat_hiv1 === 'Detected')
+                    });
+                }
+                if (this.batchResults.nat_hcv) {
+                    resultsToSave.push({
+                        test_code: 'NAT_HCV', test_name: 'HCV RNA (NAT)',
+                        result_value: this.batchResults.nat_hcv,
+                        is_abnormal: (this.batchResults.nat_hcv === 'Detected')
+                    });
+                }
+                if (this.batchResults.nat_hbv) {
+                    resultsToSave.push({
+                        test_code: 'NAT_HBV', test_name: 'HBV DNA (NAT)',
+                        result_value: this.batchResults.nat_hbv,
+                        is_abnormal: (this.batchResults.nat_hbv === 'Detected')
+                    });
+                }
+                if (this.batchResults.abo) {
+                    resultsToSave.push({
+                        test_code: 'ABO_GRP', test_name: 'ABO Group',
+                        result_value: this.batchResults.abo,
+                        is_abnormal: false
+                    });
+                }
+                if (this.batchResults.rh) {
+                    resultsToSave.push({
+                        test_code: 'RH_TYPE', test_name: 'Rh Type (RhD)',
+                        result_value: this.batchResults.rh,
+                        is_abnormal: false
+                    });
+                }
+
+                if (resultsToSave.length === 0) {
+                    alert('الرجاء اختيار نتيجة واحدة على الأقل / Please select at least one test result.');
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`/api/donations/${this.donationId}/submit_lab_result/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ results: resultsToSave })
+                    });
+
+                    if (res.ok) {
+                        this.showAddResultModal = false;
+                        this.fetchLabDetails();
+                        alert(`تم حفظ ${resultsToSave.length} فحوصات بنجاح / Successfully saved ${resultsToSave.length} test results.`);
+                    } else {
+                        const data = await res.json();
+                        alert('Error saving results: ' + JSON.stringify(data));
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Network error saving lab results.');
+                }
             },
             applyTestPreset(key) {
                 const presets = {

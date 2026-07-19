@@ -478,34 +478,54 @@ class DonationWorkflowViewSet(viewsets.ReadOnlyModelViewSet):
     def submit_lab_result(self, request, pk=None):
         workflow = self.get_object()
         from .models import LabResult
+        from inventory.models import BloodComponent
+        from django.utils import timezone
         
-        # Manual Entry
-        test_code = request.data.get('test_code')
-        test_name = request.data.get('test_name')
-        result_value = request.data.get('result_value')
-        is_abnormal = request.data.get('is_abnormal') in ['true', 'True', True]
+        results_data = request.data.get('results')
+        if not results_data and isinstance(request.data, list):
+            results_data = request.data
+            
+        if not results_data:
+            results_data = [{
+                'test_code': request.data.get('test_code'),
+                'test_name': request.data.get('test_name'),
+                'result_value': request.data.get('result_value'),
+                'is_abnormal': request.data.get('is_abnormal') in ['true', 'True', True]
+            }]
         
-        # Create Result
-        LabResult.objects.create(
-            workflow=workflow,
-            test_code=test_code,
-            test_name=test_name,
-            result_value=result_value,
-            is_abnormal=is_abnormal,
-            technician=request.user,
-            tested_at=timezone.now()
-        )
+        any_abnormal = False
+        created_count = 0
+        
+        for r in results_data:
+            code = r.get('test_code')
+            val = r.get('result_value')
+            if not code or not val:
+                continue
+            name = r.get('test_name') or code
+            abnormal = r.get('is_abnormal') in ['true', 'True', True]
+            if abnormal:
+                any_abnormal = True
+                
+            LabResult.objects.create(
+                workflow=workflow,
+                test_code=code,
+                test_name=name,
+                result_value=val,
+                is_abnormal=abnormal,
+                technician=request.user,
+                tested_at=timezone.now()
+            )
+            created_count += 1
         
         # Check overall status
         workflow.status = DonorWorkflow.Step.COMPLETED
         workflow.save(update_fields=['status', 'updated_at'] if hasattr(workflow, 'updated_at') else ['status'])
         
         # Release components from QUARANTINE
-        from inventory.models import BloodComponent
-        new_status = 'DISCARDED' if is_abnormal else 'AVAILABLE'
+        new_status = 'DISCARDED' if any_abnormal else 'AVAILABLE'
         BloodComponent.objects.filter(workflow=workflow, status='QUARANTINE').update(status=new_status)
         
-        return Response({'status': 'success', 'message': f'Lab result saved. Components set to {new_status}.'})
+        return Response({'status': 'success', 'message': f'Saved {created_count} lab results. Components set to {new_status}.'})
     @decorators.action(detail=True, methods=['post'])
     def add_order(self, request, pk=None):
         workflow = self.get_object()
