@@ -186,7 +186,7 @@
         <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-3 text-center sm:items-center sm:p-4">
                 <div
-                    class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-6 sm:w-full sm:max-w-3xl border border-slate-100">
+                    class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-6 sm:w-full sm:max-w-5xl border border-slate-100">
                     
                     <!-- Modal Header -->
                     <div class="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 px-6 py-4 text-white flex justify-between items-center">
@@ -198,13 +198,13 @@
                             </div>
                             <div>
                                 <h3 class="text-lg font-bold">Add Manual Lab Results / إدخال نتائج الفحوصات</h3>
-                                <p class="text-xs text-blue-200">إدخال جميع الفحوصات دفعة واحدة واختيار النتائج بضغطة زر</p>
+                                <p class="text-xs text-blue-200">إدخال جميع الفحوصات والأنماط الظاهرية دفعة واحدة بضغطة زر</p>
                             </div>
                         </div>
                         <button @click="showAddResultModal = false" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">✕</button>
                     </div>
 
-                    <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+                    <div class="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
                         <!-- Mode Switch & Quick Action Bar -->
                         <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
                             <div class="flex gap-2">
@@ -356,13 +356,14 @@
                                 </div>
                             </div>
 
-                            <!-- Section 3: Immunohematology (Blood Grouping) -->
-                            <div class="bg-white rounded-2xl border border-red-200 shadow-sm p-4 space-y-3">
+                            <!-- Section 3: Immunohematology (Blood Grouping & Phenotyping) -->
+                            <div class="bg-white rounded-2xl border border-red-200 shadow-sm p-4 space-y-4">
                                 <div class="flex items-center justify-between border-b pb-2 border-red-100">
                                     <h4 class="font-bold text-red-900 text-sm flex items-center gap-2">
                                         <span class="w-3 h-3 rounded-full bg-red-500"></span>
-                                        Immunohematology / فصيلة الدم والعامل الرايزيسي
+                                        Immunohematology / فصائل الدم والأنماط الظاهرية (Phenotype)
                                     </h4>
+                                    <span class="text-[11px] text-red-700 font-medium">ABO, Rh & Phenotyping</span>
                                 </div>
 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -386,6 +387,42 @@
                                             <option value="Negative">Negative (-)</option>
                                             <option value="">-- Skip --</option>
                                         </select>
+                                    </div>
+                                </div>
+
+                                <!-- Phenotype (Limited) -->
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-bold text-slate-800 text-xs">Phenotype (Limited) — RBC Phenotype</span>
+                                        <span class="text-[10px] text-purple-700 font-mono bg-purple-50 px-2 py-0.5 rounded border border-purple-200">Multi-Select</span>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2 pt-1">
+                                        <template x-for="ag in ['C', 'c', 'E', 'e', 'K']" :key="ag">
+                                            <button type="button" @click="togglePhenotypeLimited(ag)"
+                                                :class="batchResults.phenotype_limited && batchResults.phenotype_limited.includes(ag) ? 'bg-purple-600 text-white font-bold border-purple-600 shadow-sm' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'"
+                                                class="px-3.5 py-1.5 rounded-lg border text-xs font-mono transition flex items-center gap-1">
+                                                <span x-text="ag"></span>
+                                                <span x-show="batchResults.phenotype_limited && batchResults.phenotype_limited.includes(ag)">✓</span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- Full Phenotype (Extended RBC Phenotype) -->
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-bold text-slate-800 text-xs">Full Phenotype — Extended RBC Phenotype</span>
+                                        <span class="text-[10px] text-indigo-700 font-mono bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">Extended Multi-Select</span>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2 pt-1">
+                                        <template x-for="ag in ['D', 'C', 'c', 'E', 'e', 'K', 'k', 'Fya', 'Fyb', 'Jka', 'Jkb', 'M', 'N', 'S', 's', 'Lea', 'Leb', 'P1']" :key="ag">
+                                            <button type="button" @click="togglePhenotypeFull(ag)"
+                                                :class="batchResults.phenotype_full && batchResults.phenotype_full.includes(ag) ? 'bg-indigo-600 text-white font-bold border-indigo-600 shadow-sm' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'"
+                                                class="px-3 py-1.5 rounded-lg border text-xs font-mono transition flex items-center gap-1">
+                                                <span x-text="ag"></span>
+                                                <span x-show="batchResults.phenotype_full && batchResults.phenotype_full.includes(ag)">✓</span>
+                                            </button>
+                                        </template>
                                     </div>
                                 </div>
                             </div>

@@ -465,11 +465,25 @@
                 nat_hcv: 'Not Detected',
                 nat_hbv: 'Not Detected',
                 abo: 'O',
-                rh: 'Positive'
+                rh: 'Positive',
+                phenotype_limited: [],
+                phenotype_full: []
             },
             openAddResultModal() {
                 this.autoFillNormalBatch();
                 this.showAddResultModal = true;
+            },
+            togglePhenotypeLimited(antigen) {
+                if (!Array.isArray(this.batchResults.phenotype_limited)) this.batchResults.phenotype_limited = [];
+                const idx = this.batchResults.phenotype_limited.indexOf(antigen);
+                if (idx > -1) this.batchResults.phenotype_limited.splice(idx, 1);
+                else this.batchResults.phenotype_limited.push(antigen);
+            },
+            togglePhenotypeFull(antigen) {
+                if (!Array.isArray(this.batchResults.phenotype_full)) this.batchResults.phenotype_full = [];
+                const idx = this.batchResults.phenotype_full.indexOf(antigen);
+                if (idx > -1) this.batchResults.phenotype_full.splice(idx, 1);
+                else this.batchResults.phenotype_full.push(antigen);
             },
             autoFillNormalBatch() {
                 this.batchResults = {
@@ -482,13 +496,16 @@
                     nat_hcv: 'Not Detected',
                     nat_hbv: 'Not Detected',
                     abo: 'O',
-                    rh: 'Positive'
+                    rh: 'Positive',
+                    phenotype_limited: [],
+                    phenotype_full: []
                 };
             },
             clearAllBatch() {
                 this.batchResults = {
                     hcv_ab: '', hiv_combo: '', hbsag: '', hbc_ab: '', hbs_scr: '',
-                    nat_hiv1: '', nat_hcv: '', nat_hbv: '', abo: '', rh: ''
+                    nat_hiv1: '', nat_hcv: '', nat_hbv: '', abo: '', rh: '',
+                    phenotype_limited: [], phenotype_full: []
                 };
             },
             async saveBatchLabResults() {
@@ -564,6 +581,22 @@
                     resultsToSave.push({
                         test_code: 'RH_TYPE', test_name: 'Rh Type (RhD)',
                         result_value: this.batchResults.rh,
+                        is_abnormal: false
+                    });
+                }
+                if (Array.isArray(this.batchResults.phenotype_limited) && this.batchResults.phenotype_limited.length > 0) {
+                    resultsToSave.push({
+                        test_code: 'RBC_PHENOTYPE',
+                        test_name: 'RBC Phenotype (Limited)',
+                        result_value: this.batchResults.phenotype_limited.join(', '),
+                        is_abnormal: false
+                    });
+                }
+                if (Array.isArray(this.batchResults.phenotype_full) && this.batchResults.phenotype_full.length > 0) {
+                    resultsToSave.push({
+                        test_code: 'EXT_PHENOTYPE',
+                        test_name: 'Extended RBC Phenotype (Full Phenotype)',
+                        result_value: this.batchResults.phenotype_full.join(', '),
                         is_abnormal: false
                     });
                 }
