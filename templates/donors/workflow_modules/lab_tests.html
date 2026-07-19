@@ -13,19 +13,27 @@
         <div class="border-b border-slate-200">
             <nav class="-mb-px flex space-x-8" aria-label="Tabs">
                 <button @click="labSubTab = 'results'"
-                    :class="labSubTab === 'results' ? 'border-brand-500 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                    :class="labSubTab === 'results' ? 'border-brand-500 text-brand-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
                     class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Results
+                    Results / النتائج
                 </button>
                 <button @click="labSubTab = 'orders'"
-                    :class="labSubTab === 'orders' ? 'border-brand-500 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                    :class="labSubTab === 'orders' ? 'border-brand-500 text-brand-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
                     class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Orders
+                    Orders / الطلبات
                 </button>
                 <button @click="labSubTab = 'culture'"
-                    :class="labSubTab === 'culture' ? 'border-brand-500 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                    :class="labSubTab === 'culture' ? 'border-brand-500 text-brand-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
                     class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Culture Results
+                    Culture Results / نتائج الزراعة
+                </button>
+                <button @click="labSubTab = 'reference'"
+                    :class="labSubTab === 'reference' ? 'border-blue-600 text-blue-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Reference Values & Logic / القيم المرجعية والمنطق البرمجي
                 </button>
             </nav>
         </div>
@@ -33,15 +41,25 @@
         <!-- Results View -->
         <div x-show="labSubTab === 'results'" class="space-y-4">
             <!-- Actions -->
-            <div class="flex justify-end gap-3">
-                <button @click="fetchLabDetails()"
-                    class="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg text-sm shadow hover:bg-slate-200 transition">
-                    Refresh Results
+            <div class="flex flex-wrap justify-between items-center gap-3">
+                <button @click="labSubTab = 'reference'"
+                    class="px-4 py-2 bg-blue-50 text-blue-700 font-bold rounded-lg text-sm border border-blue-200 hover:bg-blue-100 transition flex items-center gap-2">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    View Reference Values / دليل القيم المرجعية
                 </button>
-                <button @click="openAddResultModal()"
-                    class="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm shadow hover:bg-blue-700 transition">
-                    + Add Manual Result
-                </button>
+
+                <div class="flex gap-3">
+                    <button @click="fetchLabDetails()"
+                        class="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg text-sm shadow hover:bg-slate-200 transition">
+                        Refresh Results
+                    </button>
+                    <button @click="openAddResultModal()"
+                        class="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm shadow hover:bg-blue-700 transition flex items-center gap-1">
+                        + Add Manual Result
+                    </button>
+                </div>
             </div>
 
             <!-- Results Table -->
@@ -70,9 +88,9 @@
                                     <td class="px-6 py-4 text-sm text-slate-900" x-text="result.test_name"></td>
                                     <td class="px-6 py-4 text-sm font-mono" x-text="result.result_value"></td>
                                     <td class="px-6 py-4 text-sm font-bold">
-                                        <span class="px-2 py-1 rounded-full text-xs"
-                                            :class="result.is_abnormal ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
-                                            x-text="result.is_abnormal ? 'ABNORMAL' : 'NORMAL'">
+                                        <span class="px-2.5 py-1 rounded-full text-xs font-bold"
+                                            :class="result.is_abnormal ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'"
+                                            x-text="result.is_abnormal ? 'ABNORMAL / REACTIVE' : 'NORMAL / PASSED'">
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-xs text-slate-500" x-text="result.technician_name"></td>
@@ -152,6 +170,260 @@
                 </button>
             </div>
         </div>
+
+        <!-- Reference Values & Validation Logic View -->
+        <div x-show="labSubTab === 'reference'" class="space-y-6 animate-in fade-in duration-300">
+            <!-- Top Banner -->
+            <div class="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 rounded-2xl p-6 text-white shadow-md">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                        <svg class="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold">Blood Donor Unit Testing — Reference Values & Validation Logic</h3>
+                        <p class="text-blue-200 text-xs mt-0.5">القيم المرجعية والمنطق البرمجي المعتمد لبنوك الدم (Qualitative vs Quantitative)</p>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed border-t border-white/10 pt-3 mt-3">
+                    تعتمد بنوك الدم على النتائج الكيفية (Qualitative) للأمراض المعدية بدلاً من المجموعات الرقمية (Range)، حيث تكون النتيجة إما <span class="text-emerald-300 font-bold">Non-Reactive / Negative</span> أو <span class="text-rose-300 font-bold">Reactive / Positive</span> وفقاً لتأكيدات الأجهزة المخبرية.
+                </p>
+            </div>
+
+            <!-- Grid 1: Immunohematology & Infectious Diseases -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Card 1: Blood Grouping & Phenotype -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                            Immunohematology / فصائل الدم والأنماط الظاهرية
+                        </h4>
+                        <span class="text-xs font-mono bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-200">ABO & Rh</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-bold border-b">
+                                <tr>
+                                    <th class="p-3 text-left">الفحص</th>
+                                    <th class="p-3 text-left">اسم الحقل</th>
+                                    <th class="p-3 text-left">النوع</th>
+                                    <th class="p-3 text-left">القيم المقبولة</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">ABO Group</td>
+                                    <td class="p-3 font-mono text-slate-600">Blood Group</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 rounded text-slate-700">List</span></td>
+                                    <td class="p-3 font-bold text-blue-700">A, B, AB, O</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">RhD</td>
+                                    <td class="p-3 font-mono text-slate-600">Rh Type</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 rounded text-slate-700">List</span></td>
+                                    <td class="p-3 font-bold text-emerald-700">Positive (+), Negative (-)</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">Phenotype (Limited)</td>
+                                    <td class="p-3 font-mono text-slate-600">RBC Phenotype</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 rounded text-slate-700">Multi Select</span></td>
+                                    <td class="p-3 font-mono text-purple-700">C, c, E, e, K</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">Full Phenotype</td>
+                                    <td class="p-3 font-mono text-slate-600">Extended RBC Phenotype</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 rounded text-slate-700">Multi Select</span></td>
+                                    <td class="p-3 font-mono text-xs text-slate-600">D, C, c, E, e, K, k, Fya, Fyb, Jka, Jkb, M, N, S, s, Lea, Leb, P1...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Card 2: Infectious Disease Serology -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                            Infectious Disease Serology / الأمراض المعدية
+                        </h4>
+                        <span class="text-xs font-mono bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">Qualitative</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-bold border-b">
+                                <tr>
+                                    <th class="p-3 text-left">الفحص</th>
+                                    <th class="p-3 text-left">اسم الحقل</th>
+                                    <th class="p-3 text-left">النوع</th>
+                                    <th class="p-3 text-left">القيم المقبولة</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">HCV Ab</td>
+                                    <td class="p-3 font-mono text-slate-600">Anti-HCV</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-amber-100 text-amber-800 font-semibold rounded">Qualitative</span></td>
+                                    <td class="p-3"><span class="text-emerald-700 font-bold">Non-Reactive</span> / <span class="text-red-600 font-bold">Reactive</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">HIV Ag/Ab Combo</td>
+                                    <td class="p-3 font-mono text-slate-600">HIV 1/2 Ag/Ab</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-amber-100 text-amber-800 font-semibold rounded">Qualitative</span></td>
+                                    <td class="p-3"><span class="text-emerald-700 font-bold">Non-Reactive</span> / <span class="text-red-600 font-bold">Reactive</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">HBsAg</td>
+                                    <td class="p-3 font-mono text-slate-600">Hepatitis B Surface Ag</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-amber-100 text-amber-800 font-semibold rounded">Qualitative</span></td>
+                                    <td class="p-3"><span class="text-emerald-700 font-bold">Non-Reactive</span> / <span class="text-red-600 font-bold">Reactive</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">HBcAb</td>
+                                    <td class="p-3 font-mono text-slate-600">Anti-HBc</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-amber-100 text-amber-800 font-semibold rounded">Qualitative</span></td>
+                                    <td class="p-3"><span class="text-emerald-700 font-bold">Non-Reactive</span> / <span class="text-red-600 font-bold">Reactive</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">Sickle Cell Screen</td>
+                                    <td class="p-3 font-mono text-slate-600">HbS Screening</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 rounded text-slate-700">Qualitative</span></td>
+                                    <td class="p-3"><span class="text-emerald-700 font-bold">Negative</span> / <span class="text-red-600 font-bold">Positive</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid 2: NAT & CBC -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Card 3: Nucleic Acid Testing (NAT) -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-indigo-500"></span>
+                            Nucleic Acid Testing (NAT) / الفحص الجزيئي
+                        </h4>
+                        <span class="text-xs font-mono bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">Viral RNA/DNA</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-bold border-b">
+                                <tr>
+                                    <th class="p-3 text-left">الفيروس (Virus)</th>
+                                    <th class="p-3 text-left">نوع النتيجة</th>
+                                    <th class="p-3 text-left">القيم المقبولة</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">HIV-1 RNA</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-indigo-50 text-indigo-800 rounded font-semibold">Qualitative</span></td>
+                                    <td class="p-3"><span class="text-emerald-700 font-bold">Not Detected</span> / <span class="text-red-600 font-bold">Detected</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">HCV RNA</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-indigo-50 text-indigo-800 rounded font-semibold">Qualitative</span></td>
+                                    <td class="p-3"><span class="text-emerald-700 font-bold">Not Detected</span> / <span class="text-red-600 font-bold">Detected</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">HBV DNA</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-indigo-50 text-indigo-800 rounded font-semibold">Qualitative</span></td>
+                                    <td class="p-3"><span class="text-emerald-700 font-bold">Not Detected</span> / <span class="text-red-600 font-bold">Detected</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-medium text-slate-600">West Nile Virus / HEV / Zika</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded">Optional</span></td>
+                                    <td class="p-3"><span class="text-emerald-700 font-bold">Not Detected</span> / <span class="text-red-600 font-bold">Detected</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Card 4: CBC Normal Ranges -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                            Complete Blood Count (CBC) / المرجع الطبيعي لصورة الدم
+                        </h4>
+                        <span class="text-xs font-mono bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">Numeric Ranges</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-bold border-b">
+                                <tr>
+                                    <th class="p-3 text-left">الفحص (Test)</th>
+                                    <th class="p-3 text-left">المرجع الطبيعي (Normal Range)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-mono">
+                                <tr>
+                                    <td class="p-2.5 font-bold text-slate-800 font-sans">Hemoglobin (Hb)</td>
+                                    <td class="p-2.5 text-blue-800 font-bold">Male: 13.5 – 17.5 g/dL</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 font-bold text-slate-800 font-sans">Hematocrit (HCT)</td>
+                                    <td class="p-2.5 text-slate-700">41 – 53 %</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 font-bold text-slate-800 font-sans">RBC</td>
+                                    <td class="p-2.5 text-slate-700">4.5 – 5.9 ×10¹²/L</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 font-bold text-slate-800 font-sans">WBC</td>
+                                    <td class="p-2.5 text-slate-700">4.0 – 11.0 ×10⁹/L</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 font-bold text-slate-800 font-sans">Platelets</td>
+                                    <td class="p-2.5 text-slate-700">150 – 450 ×10⁹/L</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 font-bold text-slate-800 font-sans">MCV / MCH / MCHC</td>
+                                    <td class="p-2.5 text-slate-600">80–100 fL | 27–33 pg | 32–36 g/dL</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Programming Logic & Validation Rules Summary -->
+            <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+                <h4 class="font-bold text-blue-900 text-base mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                    منطق التثبت والاعتماد في النظام (Programming Validation Rules)
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-xs font-semibold">
+                    <div class="bg-white p-3 rounded-xl border border-blue-200 text-center space-y-1">
+                        <span class="text-slate-500 block text-[10px] uppercase">Blood Group</span>
+                        <div class="text-blue-900 font-bold">A, B, AB, O</div>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl border border-blue-200 text-center space-y-1">
+                        <span class="text-slate-500 block text-[10px] uppercase">Rh Factor</span>
+                        <div class="text-emerald-700 font-bold">Positive / Negative</div>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl border border-blue-200 text-center space-y-1">
+                        <span class="text-slate-500 block text-[10px] uppercase">Infectious Disease</span>
+                        <div class="text-emerald-700 font-bold">Non-Reactive <span class="text-slate-400 font-normal">(Pass)</span></div>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl border border-blue-200 text-center space-y-1">
+                        <span class="text-slate-500 block text-[10px] uppercase">NAT Viruses</span>
+                        <div class="text-emerald-700 font-bold">Not Detected <span class="text-slate-400 font-normal">(Pass)</span></div>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl border border-blue-200 text-center space-y-1">
+                        <span class="text-slate-500 block text-[10px] uppercase">Sickle Cell</span>
+                        <div class="text-emerald-700 font-bold">Negative <span class="text-slate-400 font-normal">(Pass)</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Navigation -->
@@ -190,6 +462,25 @@
                     is_abnormal: false
                 };
                 this.showAddResultModal = true;
+            },
+            applyTestPreset(key) {
+                const presets = {
+                    'HCV_AB': { test_code: 'HCV_AB', test_name: 'Anti-HCV (HCV Ab)', result_value: 'Non-Reactive', is_abnormal: false },
+                    'HIV_COMBO': { test_code: 'HIV_COMBO', test_name: 'HIV 1/2 Ag/Ab Combo', result_value: 'Non-Reactive', is_abnormal: false },
+                    'HBSAG': { test_code: 'HBSAG', test_name: 'HBsAg (Hepatitis B Surface Ag)', result_value: 'Non-Reactive', is_abnormal: false },
+                    'HBC_AB': { test_code: 'HBC_AB', test_name: 'Anti-HBc (HBcAb)', result_value: 'Non-Reactive', is_abnormal: false },
+                    'HBS_SCR': { test_code: 'HBS_SCR', test_name: 'HbS Screening (Sickle Cell Screen)', result_value: 'Negative', is_abnormal: false },
+                    'NAT_HIV1': { test_code: 'NAT_HIV1', test_name: 'HIV-1 RNA (NAT)', result_value: 'Not Detected', is_abnormal: false },
+                    'NAT_HCV': { test_code: 'NAT_HCV', test_name: 'HCV RNA (NAT)', result_value: 'Not Detected', is_abnormal: false },
+                    'NAT_HBV': { test_code: 'NAT_HBV', test_name: 'HBV DNA (NAT)', result_value: 'Not Detected', is_abnormal: false },
+                    'ABO_GRP': { test_code: 'ABO_GRP', test_name: 'ABO Group', result_value: 'O', is_abnormal: false },
+                    'RH_TYPE': { test_code: 'RH_TYPE', test_name: 'Rh Type (RhD)', result_value: 'Positive', is_abnormal: false },
+                    'CBC_HB': { test_code: 'CBC_HB', test_name: 'Hemoglobin (Hb)', result_value: '14.5 g/dL', is_abnormal: false },
+                    'CBC_PLT': { test_code: 'CBC_PLT', test_name: 'Platelets', result_value: '250 x10^9/L', is_abnormal: false }
+                };
+                if (presets[key]) {
+                    this.newResult = { ...presets[key] };
+                }
             },
             async submitLabResult(resultType) {
                 const isAbnormal = (resultType === 'Positive');
