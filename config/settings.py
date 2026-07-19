@@ -1,5 +1,9 @@
 import os
-import dj_database_url
+try:
+    import dj_database_url
+except ImportError:
+    dj_database_url = None
+
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -35,8 +39,14 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 LOGIN_URL = '/login/'
 
+try:
+    import jazzmin
+    HAS_JAZZMIN = True
+except ImportError:
+    HAS_JAZZMIN = False
+
 INSTALLED_APPS = [
-    'jazzmin',
+    *(['jazzmin'] if HAS_JAZZMIN else []),
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -133,7 +143,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database Configuration
 # We prioritize DATABASE_URL (Render environment)
-if os.environ.get('DATABASE_URL'):
+if os.environ.get('DATABASE_URL') and dj_database_url:
     DATABASES = {
         'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
     }
@@ -184,11 +194,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True # For Dev
 
 # Django REST Framework Settings
+try:
+    import django_filters
+    HAS_DJANGO_FILTERS = True
+except ImportError:
+    HAS_DJANGO_FILTERS = False
+
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 25,
     'DEFAULT_FILTER_BACKENDS': [
-        'django_filters.rest_framework.DjangoFilterBackend',
+        *(['django_filters.rest_framework.DjangoFilterBackend'] if HAS_DJANGO_FILTERS else []),
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],

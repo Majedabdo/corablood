@@ -159,15 +159,370 @@
             </div>
         </div>
 
-        <!-- Culture Results View -->
-        <div x-show="labSubTab === 'culture'" class="space-y-4">
-            <div class="bg-white rounded-xl border border-slate-200 p-12 text-center">
-                <div class="text-6xl mb-4">🧫</div>
-                <h3 class="text-xl font-bold text-slate-700">Bacterial Culture Results</h3>
-                <p class="text-slate-500 mb-6">No culture requests found for this donation.</p>
-                <button class="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200">
-                    Check Microbiology System
-                </button>
+        <!-- Culture Results View (Blood Unit Bacterial Surveillance) -->
+        <div x-show="labSubTab === 'culture'" class="space-y-6 animate-in fade-in duration-300">
+            <!-- Top Banner Bar -->
+            <div class="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-950 rounded-2xl p-6 text-white shadow-md flex flex-wrap items-center justify-between gap-4 border border-blue-800/40">
+                <div class="flex items-center gap-3.5">
+                    <div class="p-3 bg-blue-500/20 rounded-2xl border border-blue-400/30">
+                        <span class="text-3xl">🧫</span>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold flex items-center gap-2">
+                            Blood Unit Culture Results / نتائج زراعة وحدة الدم
+                        </h3>
+                        <p class="text-blue-200 text-xs mt-0.5">مراقبة التلوث البكتيري لمكونات الدم (Platelet Concentrate & PRBC Bacterial Surveillance)</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button @click="requestCulture('Platelet Unit')"
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-lg transition flex items-center gap-1.5 border border-blue-400/30">
+                        <span>🧪 Request Culture / طلب مزرعة جديدة</span>
+                    </button>
+                    <button @click="openCultureModal(null)"
+                        class="px-4 py-2 bg-white text-slate-800 hover:bg-slate-100 text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5">
+                        <span>✍️ Add / Update Result / إضافة/اعتماد نتيجة</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Empty State (No culture requests) -->
+            <div x-show="cultureResults.length === 0" class="bg-white rounded-3xl border border-slate-200 p-12 text-center shadow-sm space-y-4">
+                <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto text-3xl border border-blue-100">
+                    🧫
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Bacterial Culture Results</h3>
+                    <p class="text-slate-500 text-xs mt-1 max-w-md mx-auto">No culture test requested for this blood donation. / لم يتم طلب فحص مزرعة بكتيرية لوحدة الدم هذه.</p>
+                </div>
+                <div class="flex justify-center gap-3 pt-2">
+                    <button @click="requestCulture('Platelet Unit')"
+                        class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow transition">
+                        + Request Culture / طلب مزرعة جديدة
+                    </button>
+                    <button @click="openCultureModal(null)"
+                        class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+                        + Add Culture Record / إضافة نتيجة مزرعة
+                    </button>
+                </div>
+            </div>
+
+            <!-- Culture Results List / Cards -->
+            <div x-show="cultureResults.length > 0" class="space-y-6">
+                <template x-for="c in cultureResults" :key="c.id">
+                    <div class="bg-white rounded-3xl border shadow-sm overflow-hidden transition"
+                        :class="{
+                            'border-emerald-300 shadow-emerald-500/5': c.status === 'NEGATIVE',
+                            'border-red-300 shadow-red-500/10': c.status === 'POSITIVE',
+                            'border-amber-300 shadow-amber-500/5': c.status === 'PENDING'
+                        }">
+                        
+                        <!-- Card Header Banner -->
+                        <div class="px-6 py-4 flex flex-wrap items-center justify-between gap-3 border-b"
+                            :class="{
+                                'bg-emerald-50/70 border-emerald-100': c.status === 'NEGATIVE',
+                                'bg-red-50/80 border-red-100': c.status === 'POSITIVE',
+                                'bg-amber-50/70 border-amber-100': c.status === 'PENDING'
+                            }">
+                            
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-lg"
+                                    :class="{
+                                        'bg-emerald-600 text-white': c.status === 'NEGATIVE',
+                                        'bg-red-600 text-white animate-pulse': c.status === 'POSITIVE',
+                                        'bg-amber-500 text-white': c.status === 'PENDING'
+                                    }">
+                                    <span x-text="c.status === 'NEGATIVE' ? '🟢' : (c.status === 'POSITIVE' ? '🔴' : '🟡')"></span>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="font-bold text-slate-900 text-base" x-text="c.component_name + ' Culture'"></h4>
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold"
+                                            :class="{
+                                                'bg-emerald-100 text-emerald-800 border border-emerald-300': c.status === 'NEGATIVE',
+                                                'bg-red-100 text-red-800 border border-red-300': c.status === 'POSITIVE',
+                                                'bg-amber-100 text-amber-800 border border-amber-300': c.status === 'PENDING'
+                                            }" x-text="c.status"></span>
+                                    </div>
+                                    <p class="text-xs text-slate-500" x-text="'Sample: ' + c.sample_type + ' | Collection: ' + c.collection_date"></p>
+                                </div>
+                            </div>
+
+                            <button @click="openCultureModal(c)" class="px-3.5 py-1.5 bg-white text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-xl border border-slate-200 transition shadow-sm">
+                                ✏️ Update / Edit Result
+                            </button>
+                        </div>
+
+                        <!-- Card Content Grid -->
+                        <div class="p-6 space-y-6">
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                    <span class="text-slate-400 font-bold block mb-1 uppercase tracking-wider text-[10px]">Culture Status</span>
+                                    <span class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                                        <span x-text="c.status === 'NEGATIVE' ? '🟢 Negative' : (c.status === 'POSITIVE' ? '🔴 Positive' : '🟡 Pending')"></span>
+                                    </span>
+                                </div>
+
+                                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                    <span class="text-slate-400 font-bold block mb-1 uppercase tracking-wider text-[10px]">Growth Status</span>
+                                    <span class="font-bold text-slate-800 text-sm" x-text="c.growth_status"></span>
+                                </div>
+
+                                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                    <span class="text-slate-400 font-bold block mb-1 uppercase tracking-wider text-[10px]">Final Interpretation</span>
+                                    <span class="font-bold text-sm"
+                                        :class="c.status === 'POSITIVE' ? 'text-red-700 font-extrabold' : (c.status === 'NEGATIVE' ? 'text-emerald-700 font-extrabold' : 'text-amber-700')"
+                                        x-text="c.final_interpretation"></span>
+                                </div>
+
+                                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                    <span class="text-slate-400 font-bold block mb-1 uppercase tracking-wider text-[10px]">Unit Status</span>
+                                    <span class="font-bold text-sm px-2 py-0.5 rounded-lg border"
+                                        :class="{
+                                            'bg-emerald-100 text-emerald-800 border-emerald-300': c.unit_status === 'RELEASED',
+                                            'bg-red-100 text-red-800 border-red-300': c.unit_status === 'DISCARDED',
+                                            'bg-amber-100 text-amber-800 border-amber-300': c.unit_status === 'QUARANTINED'
+                                        }" x-text="c.unit_status"></span>
+                                </div>
+                            </div>
+
+                            <!-- Case A: Negative Result Display -->
+                            <div x-show="c.status === 'NEGATIVE'" class="bg-emerald-50/60 rounded-2xl border border-emerald-200 p-4 space-y-3">
+                                <div class="flex items-center justify-between border-b border-emerald-200/60 pb-2">
+                                    <h5 class="font-bold text-emerald-900 text-xs flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                        Sterile Blood Unit Verification (نتيجة خالية من التلوث البكتيري)
+                                    </h5>
+                                    <span class="text-[11px] font-bold text-emerald-700 bg-white px-2.5 py-0.5 rounded-lg border border-emerald-200">Sterile</span>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                    <div>
+                                        <span class="text-slate-500 font-medium">Organism:</span>
+                                        <span class="font-bold text-emerald-800 ml-1">No Growth (لم ينمُ أي ميكروب)</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-500 font-medium">Incubation Time:</span>
+                                        <span class="font-bold text-slate-800 ml-1" x-text="c.incubation_days + ' Days Sterile Incubation'"></span>
+                                    </div>
+                                </div>
+                                <div class="pt-1 flex items-center gap-2">
+                                    <span class="text-xs font-bold text-emerald-800 bg-white px-3 py-1.5 rounded-xl border border-emerald-300 shadow-sm flex items-center gap-1.5">
+                                        <span>✅ Recommendation: Unit Released for Transfusion (صالحة وجاهزة لنقل الدم)</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Case B: Positive Result Display (Warning & Action Plan) -->
+                            <div x-show="c.status === 'POSITIVE'" class="bg-red-50/80 rounded-2xl border border-red-300 p-5 space-y-4">
+                                <div class="flex items-center justify-between border-b border-red-200 pb-3">
+                                    <h5 class="font-bold text-red-900 text-sm flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-red-600 animate-ping"></span>
+                                        ⚠️ Bacterial Contamination Detected (تم كشف تلوث بكتيري)
+                                    </h5>
+                                    <span class="text-xs font-extrabold text-red-800 bg-red-100 px-3 py-1 rounded-xl border border-red-300">DISCARD UNIT IMMEDIATELY</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                    <div class="bg-white p-3 rounded-xl border border-red-200">
+                                        <span class="text-slate-500 font-bold block mb-1">Organism Name (اسم البكتيريا):</span>
+                                        <span class="font-bold text-red-700 italic text-sm font-mono" x-text="c.organism_name"></span>
+                                    </div>
+
+                                    <div class="bg-white p-3 rounded-xl border border-red-200">
+                                        <span class="text-slate-500 font-bold block mb-1">Gram Stain Result:</span>
+                                        <span class="font-bold text-slate-800" x-text="c.gram_stain_result || 'Gram Stain Positive'"></span>
+                                    </div>
+
+                                    <div class="bg-white p-3 rounded-xl border border-red-200">
+                                        <span class="text-slate-500 font-bold block mb-1">Colony Count (CFU/mL):</span>
+                                        <span class="font-bold text-red-700" x-text="c.colony_count || '>100 CFU/mL'"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Recommendation Action Plan -->
+                                <div class="bg-white rounded-xl border border-red-200 p-4 space-y-2">
+                                    <span class="text-xs font-bold text-red-900 uppercase tracking-wider block border-b border-red-100 pb-1">Required Blood Bank Protocol / إجراءات السلامة المطلوبة:</span>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs pt-1">
+                                        <div class="p-2.5 bg-red-100 text-red-900 rounded-lg font-bold flex items-center gap-2 border border-red-300">
+                                            <span>🚫 1. Discard Blood Unit Immediately</span>
+                                        </div>
+                                        <div class="p-2.5 bg-amber-100 text-amber-900 rounded-lg font-bold flex items-center gap-2 border border-amber-300">
+                                            <span>📢 2. Notify Blood Bank Supervisor</span>
+                                        </div>
+                                        <div class="p-2.5 bg-blue-100 text-blue-900 rounded-lg font-bold flex items-center gap-2 border border-blue-300">
+                                            <span>🔍 3. Start Donor Investigation</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div x-show="c.comments" class="text-xs text-red-800 bg-white p-3 rounded-xl border border-red-200">
+                                    <span class="font-bold block text-slate-700 mb-0.5">Comments & Lab Notes:</span>
+                                    <p x-text="c.comments"></p>
+                                </div>
+                            </div>
+
+                            <!-- Case C: Pending Incubation Display -->
+                            <div x-show="c.status === 'PENDING'" class="bg-amber-50/60 rounded-2xl border border-amber-200 p-4 space-y-3">
+                                <div class="flex items-center justify-between border-b border-amber-200/60 pb-2">
+                                    <h5 class="font-bold text-amber-900 text-xs flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                        Bacterial Incubation in Progress (مزرعة قيد التحضين)
+                                    </h5>
+                                    <span class="text-[11px] font-bold text-amber-800 bg-white px-2.5 py-0.5 rounded-lg border border-amber-200" x-text="'Day ' + c.current_incubation_day + ' of ' + c.incubation_days"></span>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                    <div>
+                                        <span class="text-slate-500 font-medium">Current Observation:</span>
+                                        <span class="font-bold text-amber-800 ml-1" x-text="c.growth_status"></span>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-500 font-medium">Final Result:</span>
+                                        <span class="font-bold text-slate-700 ml-1">Pending Incubation Completion</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Audit & Approval Footer -->
+                            <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-[11px] text-slate-500 gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span>👨‍🔬 <strong>Approved By:</strong> <span class="text-slate-800 font-semibold" x-text="c.approved_by_name"></span></span>
+                                </div>
+                                <div>
+                                    <span>🕒 <strong>Approval Time:</strong> <span class="text-slate-800 font-semibold" x-text="c.approval_time"></span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Add/Edit Culture Modal -->
+        <div x-show="showCultureModal" x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                <div class="flex min-h-full items-end justify-center p-3 text-center sm:items-center sm:p-4">
+                    <div class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-6 sm:w-full sm:max-w-2xl border border-slate-100">
+                        
+                        <!-- Header -->
+                        <div class="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 px-6 py-4 text-white flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">🧫</span>
+                                <div>
+                                    <h3 class="text-lg font-bold">Approve Blood Unit Culture Result / اعتماد نتيجة مزرعة دم</h3>
+                                    <p class="text-xs text-blue-200">إدخال حالة الفحص وتفاصيل التلوث البكتيري إن وجد</p>
+                                </div>
+                            </div>
+                            <button @click="showCultureModal = false" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">✕</button>
+                        </div>
+
+                        <!-- Form Content -->
+                        <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                            <!-- Status Selector -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Culture Status / نتيجة المزرعة</label>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <button type="button" @click="cultureForm.status = 'NEGATIVE'"
+                                        :class="cultureForm.status === 'NEGATIVE' ? 'bg-emerald-600 text-white font-bold shadow' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                                        class="py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1">
+                                        <span>🟢 Negative (سليم)</span>
+                                    </button>
+
+                                    <button type="button" @click="cultureForm.status = 'POSITIVE'"
+                                        :class="cultureForm.status === 'POSITIVE' ? 'bg-red-600 text-white font-bold shadow' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                                        class="py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1">
+                                        <span>🔴 Positive (موجب ⚠️)</span>
+                                    </button>
+
+                                    <button type="button" @click="cultureForm.status = 'PENDING'"
+                                        :class="cultureForm.status === 'PENDING' ? 'bg-amber-500 text-white font-bold shadow' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                                        class="py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1">
+                                        <span>🟡 Pending (تحضين)</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Component Name</label>
+                                    <input type="text" x-model="cultureForm.component_name"
+                                        class="w-full rounded-lg border-slate-300 focus:ring-blue-500 text-xs font-semibold"
+                                        placeholder="e.g. Platelet Unit">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Sample Type</label>
+                                    <input type="text" x-model="cultureForm.sample_type"
+                                        class="w-full rounded-lg border-slate-300 focus:ring-blue-500 text-xs"
+                                        placeholder="e.g. Platelet Concentrate">
+                                </div>
+                            </div>
+
+                            <!-- Additional Dynamic Fields when POSITIVE -->
+                            <div x-show="cultureForm.status === 'POSITIVE'" class="p-4 bg-red-50 rounded-2xl border border-red-200 space-y-3">
+                                <div class="flex items-center gap-2 text-red-900 font-bold text-xs border-b border-red-200 pb-2">
+                                    <span>⚠️ Positive Bacterial Details / تفاصيل الميكروب والبكتيريا</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-bold text-red-900 mb-1">Organism Name (اسم الميكروب)</label>
+                                        <input type="text" x-model="cultureForm.organism_name"
+                                            class="w-full rounded-lg border-red-300 text-xs font-mono font-bold text-red-800 focus:ring-red-500"
+                                            placeholder="e.g. Staphylococcus epidermidis">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-bold text-red-900 mb-1">Gram Stain Result</label>
+                                        <input type="text" x-model="cultureForm.gram_stain_result"
+                                            class="w-full rounded-lg border-red-300 text-xs focus:ring-red-500"
+                                            placeholder="e.g. Gram Positive Cocci in Clusters">
+                                    </div>
+
+                                    <div class="sm:col-span-2">
+                                        <label class="block text-xs font-bold text-red-900 mb-1">Colony Count (CFU/mL)</label>
+                                        <input type="text" x-model="cultureForm.colony_count"
+                                            class="w-full rounded-lg border-red-300 text-xs font-bold focus:ring-red-500"
+                                            placeholder="e.g. >100 CFU/mL">
+                                    </div>
+                                </div>
+
+                                <div class="bg-red-100/70 p-3 rounded-xl border border-red-200 text-xs text-red-900 space-y-1">
+                                    <span class="font-bold block">⚠️ Automatic Blood Bank Rule:</span>
+                                    <p>حفظ النتيجة كـ Positive سيغير حالة وحدة الدم تلقائياً إلى <strong>DISCARDED (إتلاف مباشر)</strong> وسيطلب إبلاغ المشرف والبدء بتقصي المتبرع.</p>
+                                </div>
+                            </div>
+
+                            <!-- Approved By -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Approved By (اسم معتمد النتيجة)</label>
+                                <input type="text" x-model="cultureForm.approved_by_name"
+                                    class="w-full rounded-lg border-slate-300 focus:ring-blue-500 text-xs font-bold"
+                                    placeholder="e.g. Dr. Ahmed (Microbiologist)">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Comments & Notes / ملاحظات</label>
+                                <textarea x-model="cultureForm.comments" rows="2"
+                                    class="w-full rounded-lg border-slate-300 focus:ring-blue-500 text-xs"
+                                    placeholder="e.g. Unit released for transfusion after 7 days sterile incubation."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-wrap sm:flex-row-reverse gap-3 justify-between items-center">
+                            <button @click="submitCultureForm()" type="button"
+                                class="inline-flex w-full justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-blue-700 sm:w-auto transition flex items-center gap-2">
+                                <span>Save & Approve Culture Result / حفظ واعتماد النتيجة</span>
+                            </button>
+                            <button @click="showCultureModal = false" type="button"
+                                class="inline-flex w-full justify-center rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:w-auto transition">
+                                Cancel / إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -682,9 +1037,106 @@
                     const data = await res.json();
                     this.labResults = data.lab_results || [];
                     this.labOrders = data.lab_orders || [];
-                    this.cultureResults = [];
+                    await this.fetchCultureResults();
                 } catch (e) {
                     console.error("Error fetching lab details", e);
+                }
+            },
+            showCultureModal: false,
+            cultureForm: {
+                culture_id: null,
+                status: 'NEGATIVE',
+                component_name: 'Platelet Unit',
+                sample_type: 'Platelet Concentrate',
+                approved_by_name: 'Dr. Ahmed (Microbiologist)',
+                current_incubation_day: 3,
+                organism_name: 'Staphylococcus epidermidis',
+                gram_stain_result: 'Gram Positive Cocci in Clusters',
+                colony_count: '>100 CFU/mL',
+                antibiotic_susceptibility: '',
+                comments: ''
+            },
+            openCultureModal(c) {
+                if (c) {
+                    this.cultureForm = {
+                        culture_id: c.id,
+                        status: c.status || 'NEGATIVE',
+                        component_name: c.component_name || 'Platelet Unit',
+                        sample_type: c.sample_type || 'Platelet Concentrate',
+                        approved_by_name: c.approved_by_name || 'Dr. Ahmed (Microbiologist)',
+                        current_incubation_day: c.current_incubation_day || 3,
+                        organism_name: c.organism_name || 'Staphylococcus epidermidis',
+                        gram_stain_result: c.gram_stain_result || 'Gram Positive Cocci in Clusters',
+                        colony_count: c.colony_count || '>100 CFU/mL',
+                        antibiotic_susceptibility: c.antibiotic_susceptibility || '',
+                        comments: c.comments || ''
+                    };
+                } else {
+                    this.cultureForm = {
+                        culture_id: null,
+                        status: 'NEGATIVE',
+                        component_name: 'Platelet Unit',
+                        sample_type: 'Platelet Concentrate',
+                        approved_by_name: 'Dr. Ahmed (Microbiologist)',
+                        current_incubation_day: 3,
+                        organism_name: 'Staphylococcus epidermidis',
+                        gram_stain_result: 'Gram Positive Cocci in Clusters',
+                        colony_count: '>100 CFU/mL',
+                        antibiotic_susceptibility: '',
+                        comments: ''
+                    };
+                }
+                this.showCultureModal = true;
+            },
+            async fetchCultureResults() {
+                try {
+                    const res = await fetch(`/api/donations/${this.donationId}/culture_results/`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.cultureResults = data.results || [];
+                    }
+                } catch (e) {
+                    console.error("Error fetching culture results", e);
+                }
+            },
+            async requestCulture(compName) {
+                try {
+                    const res = await fetch(`/api/donations/${this.donationId}/request_culture/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ component_name: compName || 'Platelet Unit' })
+                    });
+                    if (res.ok) {
+                        await this.fetchCultureResults();
+                        alert('Culture test requested for ' + (compName || 'Platelet Unit'));
+                    }
+                } catch (e) {
+                    alert('Error requesting culture');
+                }
+            },
+            async submitCultureForm() {
+                try {
+                    const res = await fetch(`/api/donations/${this.donationId}/submit_culture_result/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify(this.cultureForm)
+                    });
+                    if (res.ok) {
+                        this.showCultureModal = false;
+                        await this.fetchCultureResults();
+                        alert('Culture result saved and approved successfully / تم حفظ واعتماد نتيجة المزرعة بنجاح.');
+                    } else {
+                        alert('Error saving culture result.');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Network error.');
                 }
             },
             async saveManualResult() {

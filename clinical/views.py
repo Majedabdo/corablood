@@ -539,6 +539,122 @@ class DonationWorkflowViewSet(viewsets.ReadOnlyModelViewSet):
             created_by=request.user
         )
         return Response({'status': 'success', 'message': 'Order created.'})
+
+    @decorators.action(detail=True, methods=['get'])
+    def culture_results(self, request, pk=None):
+        workflow = self.get_object()
+        from .models import BloodUnitCulture
+        from django.utils import timezone
+        
+        cultures = BloodUnitCulture.objects.filter(workflow=workflow).order_by('-created_at')
+        
+        data = []
+        for c in cultures:
+            data.append({
+                'id': c.id,
+                'component_name': c.component_name,
+                'sample_type': c.sample_type,
+                'collection_date': c.collection_date.strftime('%d-%b-%Y') if c.collection_date else timezone.now().strftime('%d-%b-%Y'),
+                'report_date': c.report_date.strftime('%d-%b-%Y') if c.report_date else timezone.now().strftime('%d-%b-%Y'),
+                'status': c.status,
+                'incubation_days': c.incubation_days,
+                'current_incubation_day': c.current_incubation_day,
+                'growth_status': c.growth_status,
+                'final_interpretation': c.get_final_interpretation_display() if hasattr(c, 'get_final_interpretation_display') else c.final_interpretation,
+                'unit_status': c.unit_status,
+                'organism_name': c.organism_name or 'No Growth',
+                'gram_stain_result': c.gram_stain_result or '',
+                'colony_count': c.colony_count or '',
+                'antibiotic_susceptibility': c.antibiotic_susceptibility or '',
+                'comments': c.comments or '',
+                'approved_by_name': c.approved_by_name or 'Dr. Ahmed (Microbiologist)',
+                'approval_time': c.approval_time.strftime('%d-%b-%Y %H:%M') if c.approval_time else timezone.now().strftime('%d-%b-%Y %H:%M'),
+            })
+        return Response({'status': 'success', 'results': data})
+
+    @decorators.action(detail=True, methods=['post'])
+    def request_culture(self, request, pk=None):
+        workflow = self.get_object()
+        from .models import BloodUnitCulture
+        from django.utils import timezone
+        
+        component_name = request.data.get('component_name', 'Platelet Unit')
+        sample_type = request.data.get('sample_type', 'Platelet Concentrate')
+        
+        culture = BloodUnitCulture.objects.create(
+            workflow=workflow,
+            component_name=component_name,
+            sample_type=sample_type,
+            collection_date=timezone.now().date(),
+            status=BloodUnitCulture.CultureStatus.PENDING,
+            incubation_days=7,
+            current_incubation_day=1,
+            growth_status='No Growth Yet',
+            final_interpretation=BloodUnitCulture.FinalInterpretation.PENDING,
+            unit_status=BloodUnitCulture.UnitStatus.QUARANTINED
+        )
+        return Response({'status': 'success', 'message': 'Culture test requested.', 'id': culture.id})
+
+    @decorators.action(detail=True, methods=['post'])
+    def submit_culture_result(self, request, pk=None):
+        workflow = self.get_object()
+        from .models import BloodUnitCulture
+        from inventory.models import BloodComponent
+        from django.utils import timezone
+        
+        status_val = request.data.get('status', 'NEGATIVE')
+        approver = request.data.get('approved_by_name', 'Dr. Ahmed (Microbiologist)')
+        
+        culture_id = request.data.get('culture_id')
+        culture = None
+        if culture_id:
+            culture = BloodUnitCulture.objects.filter(id=culture_id, workflow=workflow).first()
+        if not culture:
+            culture = BloodUnitCulture(workflow=workflow)
+
+        culture.component_name = request.data.get('component_name', 'Platelet Unit')
+        culture.sample_type = request.data.get('sample_type', 'Platelet Concentrate')
+        culture.status = status_val
+        culture.collection_date = timezone.now().date()
+        culture.report_date = timezone.now().date()
+        culture.approved_by_name = approver
+        if request.user.is_authenticated:
+            culture.approved_by = request.user
+        culture.approval_time = timezone.now()
+        
+        if status_val == 'POSITIVE':
+            culture.growth_status = 'Growth Detected'
+            culture.final_interpretation = BloodUnitCulture.FinalInterpretation.CONTAMINATED
+            culture.unit_status = BloodUnitCulture.UnitStatus.DISCARDED
+            culture.organism_name = request.data.get('organism_name', 'Staphylococcus epidermidis')
+            culture.gram_stain_result = request.data.get('gram_stain_result', 'Gram Positive Cocci')
+            culture.colony_count = request.data.get('colony_count', '>100 CFU/mL')
+            culture.antibiotic_susceptibility = request.data.get('antibiotic_susceptibility', '')
+            culture.comments = request.data.get('comments', 'Bacterial contamination detected. Discard blood unit immediately.')
+            
+            # Automatically update inventory component status to DISCARDED
+            BloodComponent.objects.filter(workflow=workflow).update(status='DISCARDED', bacterial_contamination=True)
+
+        elif status_val == 'NEGATIVE':
+            culture.growth_status = 'No Growth'
+            culture.final_interpretation = BloodUnitCulture.FinalInterpretation.STERILE
+            culture.unit_status = BloodUnitCulture.UnitStatus.RELEASED
+            culture.organism_name = 'No Growth'
+            culture.gram_stain_result = ''
+            culture.colony_count = ''
+            culture.comments = request.data.get('comments', 'Unit released for transfusion after sterile incubation.')
+            
+            # Automatically update inventory component status to AVAILABLE / RELEASED
+            BloodComponent.objects.filter(workflow=workflow, status='QUARANTINE').update(status='AVAILABLE', bacterial_contamination=False)
+
+        else: # PENDING
+            culture.growth_status = 'No Growth Yet'
+            culture.final_interpretation = BloodUnitCulture.FinalInterpretation.PENDING
+            culture.unit_status = BloodUnitCulture.UnitStatus.QUARANTINED
+            culture.current_incubation_day = int(request.data.get('current_incubation_day', 3))
+
+        culture.save()
+        return Response({'status': 'success', 'message': f'Culture result saved as {status_val}.'})
         
 
     def get_serializer_class(self):

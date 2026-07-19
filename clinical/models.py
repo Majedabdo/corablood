@@ -606,3 +606,53 @@ class DonorMedicationRecord(models.Model):
 
     def __str__(self):
         return f"Medication Record for {self.workflow}"
+
+
+class BloodUnitCulture(models.Model):
+    """Bacterial Culture Results for Blood Units (Platelets, PRBC, etc.)"""
+    class CultureStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        NEGATIVE = 'NEGATIVE', 'Negative'
+        POSITIVE = 'POSITIVE', 'Positive'
+
+    class FinalInterpretation(models.TextChoices):
+        STERILE = 'STERILE', 'Sterile Blood Component'
+        CONTAMINATED = 'CONTAMINATED', 'Bacterial Contamination'
+        PENDING = 'PENDING', 'Pending'
+
+    class UnitStatus(models.TextChoices):
+        RELEASED = 'RELEASED', 'Released for Transfusion'
+        QUARANTINED = 'QUARANTINED', 'Quarantined'
+        DISCARDED = 'DISCARDED', 'Discarded'
+
+    workflow = models.ForeignKey('DonorWorkflow', on_delete=models.CASCADE, related_name='culture_results')
+    component_name = models.CharField(max_length=100, default='Platelet Unit')
+    sample_type = models.CharField(max_length=100, default='Platelet Concentrate')
+    
+    collection_date = models.DateField(null=True, blank=True)
+    report_date = models.DateField(null=True, blank=True)
+    
+    status = models.CharField(max_length=20, choices=CultureStatus.choices, default=CultureStatus.PENDING)
+    incubation_days = models.IntegerField(default=7, help_text="Incubation period in days")
+    current_incubation_day = models.IntegerField(default=1)
+    
+    growth_status = models.CharField(max_length=100, default='No Growth Yet')
+    final_interpretation = models.CharField(max_length=100, choices=FinalInterpretation.choices, default=FinalInterpretation.PENDING)
+    unit_status = models.CharField(max_length=50, choices=UnitStatus.choices, default=UnitStatus.QUARANTINED)
+    
+    # Conditional fields for Positive results
+    organism_name = models.CharField(max_length=200, blank=True, null=True) # e.g. Staphylococcus epidermidis
+    gram_stain_result = models.CharField(max_length=200, blank=True, null=True) # e.g. Gram Positive Cocci
+    colony_count = models.CharField(max_length=100, blank=True, null=True) # e.g. >100 CFU/mL
+    antibiotic_susceptibility = models.TextField(blank=True, null=True)
+    comments = models.TextField(blank=True, null=True)
+    
+    approved_by_name = models.CharField(max_length=150, default='Dr. Ahmed (Microbiologist)')
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_cultures')
+    approval_time = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Culture Result for {self.workflow} - {self.status}"
