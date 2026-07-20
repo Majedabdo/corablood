@@ -1237,7 +1237,9 @@ def disposition_to_store(request):
             wf = comp.workflow
             bag_code = comp.unit_number
             try:
-                if wf and hasattr(wf, 'blood_draw') and wf.blood_draw and wf.blood_draw.bag_serial_number:
+                if wf and wf.donation_code:
+                    bag_code = wf.donation_code
+                elif wf and hasattr(wf, 'blood_draw') and wf.blood_draw and wf.blood_draw.bag_serial_number:
                     bag_code = wf.blood_draw.bag_serial_number
             except Exception:
                 pass
@@ -1275,51 +1277,19 @@ def disposition_to_store(request):
     })
 
 def store_report(request):
-    blood_groups = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-']
-    component_types = [
-        {'code': 'PRBC', 'color': 'red'},
-        {'code': 'FFP', 'color': 'blue'},
-        {'code': 'Cryoprecipitate', 'color': 'slate'},
-        {'code': 'APHERESIS', 'color': 'amber'}
-    ]
-    
-    store_items = []
-    import random
-    random.seed(42)
-    
-    for c_type in component_types:
-        for bg in blood_groups:
-            qty = random.randint(0, 300)
-            if qty > 0:
-                store_items.append({
-                    'blood_group': bg,
-                    'component_type': c_type['code'],
-                    'qty': qty,
-                    'badge_color': c_type['color']
-                })
-                
-    req_type = request.GET.get('component_type')
-    req_bg = request.GET.get('blood_group')
-    
-    if req_type and req_type != 'All':
-        store_items = [x for x in store_items if x['component_type'] == req_type]
-        
-    if req_bg and req_bg != 'All':
-        store_items = [x for x in store_items if x['blood_group'] == req_bg]
-
     return render(request, 'reports/store.html', {
-        'store_items': store_items,
-        'current_filters': {
-            'component_type': req_type,
-            'blood_group': req_bg
-        }
+        'store_items': [],
+        'current_filters': {'component_type': '', 'blood_group': ''}
     })
 
 def component_details(request):
     from inventory.models import BloodComponent
     from django.utils import timezone
     
-    test_patterns = ['W29', 'W23', 'W21', 'W19', '24354564343', '576777', '345-W', '657-W', 'H107726']
+    test_patterns = [
+        '54321', '5400', '890', '987', '6543', '800', '5100', '654', '543', '5000', '12345',
+        'W29', 'W23', 'W21', 'W19', 'W18', 'W15', 'W13', 'W11', '24354564343', '576777', '345-W', '657-W'
+    ]
     for pat in test_patterns:
         try:
             BloodComponent.objects.filter(unit_number__icontains=pat).delete()
@@ -1339,7 +1309,9 @@ def component_details(request):
             wf = comp.workflow
             bag_code = comp.unit_number
             try:
-                if wf and hasattr(wf, 'blood_draw') and wf.blood_draw and wf.blood_draw.bag_serial_number:
+                if wf and wf.donation_code:
+                    bag_code = wf.donation_code
+                elif wf and hasattr(wf, 'blood_draw') and wf.blood_draw and wf.blood_draw.bag_serial_number:
                     bag_code = wf.blood_draw.bag_serial_number
             except Exception:
                 pass
@@ -1395,7 +1367,10 @@ def discarded_units(request):
     from inventory.models import BloodComponent
     from django.utils import timezone
     
-    test_patterns = ['W29', 'W23', 'W21', 'W19', '24354564343', '576777', '345-W', '657-W', 'H107726']
+    test_patterns = [
+        '54321', '5400', '890', '987', '6543', '800', '5100', '654', '543', '5000', '12345',
+        'W29', 'W23', 'W21', 'W19', 'W18', 'W15', 'W13', 'W11', '24354564343', '576777', '345-W', '657-W'
+    ]
     for pat in test_patterns:
         try:
             BloodComponent.objects.filter(unit_number__icontains=pat).delete()
@@ -1417,7 +1392,9 @@ def discarded_units(request):
                 seen_wf_ids.add(wf.id)
             bag_code = comp.unit_number
             try:
-                if wf and hasattr(wf, 'blood_draw') and wf.blood_draw and wf.blood_draw.bag_serial_number:
+                if wf and wf.donation_code:
+                    bag_code = wf.donation_code
+                elif wf and hasattr(wf, 'blood_draw') and wf.blood_draw and wf.blood_draw.bag_serial_number:
                     bag_code = wf.blood_draw.bag_serial_number
             except Exception:
                 pass
