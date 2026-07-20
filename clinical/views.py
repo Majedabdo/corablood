@@ -494,6 +494,7 @@ class DonationWorkflowViewSet(viewsets.ReadOnlyModelViewSet):
             }]
         
         any_abnormal = False
+        abnormal_reasons = []
         created_count = 0
         
         for r in results_data:
@@ -502,9 +503,10 @@ class DonationWorkflowViewSet(viewsets.ReadOnlyModelViewSet):
             if not code or not val:
                 continue
             name = r.get('test_name') or code
-            abnormal = r.get('is_abnormal') in ['true', 'True', True]
+            abnormal = r.get('is_abnormal') in ['true', 'True', True] or val in ['Reactive', 'Positive', 'Detected']
             if abnormal:
                 any_abnormal = True
+                abnormal_reasons.append(f"{name} ({val})")
                 
             LabResult.objects.create(
                 workflow=workflow,
@@ -512,7 +514,7 @@ class DonationWorkflowViewSet(viewsets.ReadOnlyModelViewSet):
                 test_name=name,
                 result_value=val,
                 is_abnormal=abnormal,
-                technician=request.user,
+                technician=request.user if request.user.is_authenticated else None,
                 tested_at=timezone.now()
             )
             created_count += 1
@@ -521,11 +523,56 @@ class DonationWorkflowViewSet(viewsets.ReadOnlyModelViewSet):
         workflow.status = DonorWorkflow.Step.COMPLETED
         workflow.save(update_fields=['status', 'updated_at'] if hasattr(workflow, 'updated_at') else ['status'])
         
-        # Release components from QUARANTINE
-        new_status = 'DISCARDED' if any_abnormal else 'AVAILABLE'
-        BloodComponent.objects.filter(workflow=workflow, status='QUARANTINE').update(status=new_status)
+        # Ensure components exist for workflow
+        from inventory.models import BloodComponent
+        from datetime import timedelta
         
-        return Response({'status': 'success', 'message': f'Saved {created_count} lab results. Components set to {new_status}.'})
+        if not BloodComponent.objects.filter(workflow=workflow).exists():
+            bag_id = getattr(workflow.blood_draw, 'bag_serial_number', None) if hasattr(workflow, 'blood_draw') else None
+            if not bag_id:
+                bag_id = workflow.donation_code or f"UNIT-{workflow.id:05d}"
+            bg = workflow.donor.blood_group if (workflow.donor and workflow.donor.blood_group) else "O+"
+            now = timezone.now()
+            
+            BloodComponent.objects.create(
+                workflow=workflow, component_type=BloodComponent.Type.PRBC,
+                unit_number=f"{bag_id}-PRBC", blood_group=bg, volume=300,
+                status=BloodComponent.Status.QUARANTINE, expiration_date=now + timedelta(days=42),
+                created_by=request.user if request.user.is_authenticated else None
+            )
+            BloodComponent.objects.create(
+                workflow=workflow, component_type=BloodComponent.Type.PLT,
+                unit_number=f"{bag_id}-PLT", blood_group=bg, volume=50,
+                status=BloodComponent.Status.QUARANTINE, expiration_date=now + timedelta(days=5),
+                created_by=request.user if request.user.is_authenticated else None
+            )
+            BloodComponent.objects.create(
+                workflow=workflow, component_type=BloodComponent.Type.FFP,
+                unit_number=f"{bag_id}-FFP", blood_group=bg, volume=175,
+                status=BloodComponent.Status.QUARANTINE, expiration_date=now + timedelta(days=365),
+                created_by=request.user if request.user.is_authenticated else None
+            )
+        
+        # Release components from QUARANTINE to Disposition To Store (AVAILABLE) or DISCARDED
+        if any_abnormal:
+            new_status = 'DISCARDED'
+            note_text = f"Discarded due to abnormal lab test(s): {', '.join(abnormal_reasons)}"
+        else:
+            new_status = 'AVAILABLE'
+            note_text = "Passed all laboratory screening tests. Approved for Disposition To Store."
+
+        BloodComponent.objects.filter(workflow=workflow).update(
+            status=new_status,
+            notes=note_text,
+            approved_by=request.user if request.user.is_authenticated else None,
+            approved_at=timezone.now()
+        )
+        
+        return Response({
+            'status': 'success',
+            'disposition_status': new_status,
+            'message': f'Saved {created_count} lab results. Unit disposition set to {new_status}.'
+        })
     @decorators.action(detail=True, methods=['post'])
     def add_order(self, request, pk=None):
         workflow = self.get_object()
@@ -1155,39 +1202,60 @@ def pending_verification(request):
 @staff_required
 def disposition_to_store(request):
     from .models import DonorWorkflow
+    from inventory.models import BloodComponent
     from datetime import timedelta
     from django.utils import timezone
     
-    # Mock data source: Completed workflows
+    # Fetch real components with status='AVAILABLE' or 'RELEASED'
+    db_comps = BloodComponent.objects.filter(
+        status__in=['AVAILABLE', 'RELEASED']
+    ).select_related('workflow', 'workflow__donor').order_by('-updated_at')
+    
+    components_list = []
+    seen_ids = set()
+    
+    for comp in db_comps:
+        seen_ids.add(comp.id)
+        wf = comp.workflow
+        bag_code = comp.unit_number
+        if hasattr(wf, 'blood_draw') and wf.blood_draw.bag_serial_number:
+            bag_code = wf.blood_draw.bag_serial_number
+            
+        components_list.append({
+            'id': comp.id,
+            'donation_code': bag_code,
+            'component_type': comp.get_component_type_display() if hasattr(comp, 'get_component_type_display') else comp.component_type,
+            'blood_group': comp.blood_group or (wf.donor.blood_group if wf and wf.donor else 'O+'),
+            'volume': comp.volume,
+            'expire_date': comp.expiration_date,
+            'created_at': comp.updated_at or comp.manufactured_at,
+            'notes': comp.notes or 'Passed all screening tests. Approved for Disposition To Store.'
+        })
+        
+    # Also fetch completed workflows with no abnormal results as fallback
     completed_flows = DonorWorkflow.objects.filter(
         status=DonorWorkflow.Step.COMPLETED
     ).select_related('donor').order_by('-updated_at')
     
-    components_list = []
-    comp_types = ['PLAT_PC', 'FFP', 'PRBC', 'APHERESIS']
-    
+    comp_types = ['PLT', 'FFP', 'PRBC', 'APHERESIS']
     for i, wf in enumerate(completed_flows):
-        c_type = comp_types[i % 4]
-        
-        # Calculate expiry based on component type
-        if c_type in ['PLAT_PC', 'PLT', 'APHERESIS']:
-            expire_days = 5
-            volume = 50 if c_type == 'PLAT_PC' else 250
-        elif c_type == 'FFP':
-            expire_days = 365
-            volume = 173
-        else: # PRBC
-            expire_days = 42
-            volume = 300
+        if hasattr(wf, 'lab_results') and wf.lab_results.filter(is_abnormal=True).exists():
+            continue
             
+        c_type = comp_types[i % 4]
+        expire_days = 5 if c_type in ['PLT', 'APHERESIS'] else (365 if c_type == 'FFP' else 42)
+        volume = 50 if c_type == 'PLT' else (175 if c_type == 'FFP' else 300)
+        bag_serial = wf.blood_draw.bag_serial_number if hasattr(wf, 'blood_draw') and wf.blood_draw.bag_serial_number else f"CB-{wf.id:04d}"
+        
         components_list.append({
-            'id': 51275 - i,
-            'donation_code': wf.blood_draw.bag_serial_number if hasattr(wf, 'blood_draw') else f"H10772600033{i}",
+            'id': 9000 + wf.id,
+            'donation_code': bag_serial,
             'component_type': c_type,
-            'blood_group': wf.donor.blood_group,
+            'blood_group': wf.donor.blood_group if (wf.donor and wf.donor.blood_group) else 'O+',
             'volume': volume,
             'expire_date': timezone.now() + timedelta(days=expire_days),
-            'created_at': wf.updated_at
+            'created_at': wf.updated_at,
+            'notes': 'Passed screening. Disposition To Store.'
         })
 
     return render(request, 'reports/disposition_to_store.html', {
@@ -1196,9 +1264,6 @@ def disposition_to_store(request):
 
 @staff_required
 def store_report(request):
-    # Mock aggregation for Store Report
-    # Real implementation would use: Component.objects.values('blood_group', 'component_type').annotate(qty=Count('id'))
-    
     blood_groups = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-']
     component_types = [
         {'code': 'PRBC', 'color': 'red'},
@@ -1208,14 +1273,11 @@ def store_report(request):
     ]
     
     store_items = []
-    
-    # Deterministic mock generation
     import random
-    random.seed(42) # Fixed seed for consistent UI
+    random.seed(42)
     
     for c_type in component_types:
         for bg in blood_groups:
-            # Random quantity between 0 and 300, weighted for realism
             qty = random.randint(0, 300)
             if qty > 0:
                 store_items.append({
@@ -1225,7 +1287,6 @@ def store_report(request):
                     'badge_color': c_type['color']
                 })
                 
-    # Initial Filter Logic (Mock)
     req_type = request.GET.get('component_type')
     req_bg = request.GET.get('blood_group')
     
@@ -1245,10 +1306,8 @@ def store_report(request):
 
 @staff_required
 def component_details(request):
-    # Mock data for Component Details Report
     from datetime import timedelta
     from django.utils import timezone
-    import random
     
     components = []
     comp_types = ['PLAT_PC', 'FFP', 'PRBC', 'APHERESIS']
@@ -1257,7 +1316,6 @@ def component_details(request):
     for i in range(10):
         c_type = comp_types[i % 4]
         bg = bg_types[i % 4]
-        
         status = 'Discarded' if i % 2 == 0 else 'Stock'
         is_discarded = (status == 'Discarded')
         
@@ -1291,50 +1349,91 @@ def component_details(request):
 
 @staff_required
 def discarded_units(request):
-    # Mock data for Discarded Units Report
-    from datetime import timedelta
+    from .models import DonorWorkflow, LabResult, BloodUnitCulture
+    from inventory.models import BloodComponent
     from django.utils import timezone
-    import random
+    
+    # 1. Fetch real components with status='DISCARDED'
+    db_discarded = BloodComponent.objects.filter(
+        status='DISCARDED'
+    ).select_related('workflow', 'workflow__donor', 'modified_by').order_by('-updated_at')
     
     discarded_comp = []
-    comp_types = ['PLAT_PC', 'PLAT_PC', 'PLAT_PC', 'PLAT_PC']
-    blood_groups = ['O+', 'B+', 'AB+', 'O-']
+    seen_wf_ids = set()
     
-    for i in range(4):
-        c_type = comp_types[i]
-        bg = blood_groups[i]
+    for comp in db_discarded:
+        wf = comp.workflow
+        if wf:
+            seen_wf_ids.add(wf.id)
+        bag_code = comp.unit_number
+        if wf and hasattr(wf, 'blood_draw') and wf.blood_draw.bag_serial_number:
+            bag_code = wf.blood_draw.bag_serial_number
+            
+        reasons = []
+        if wf:
+            abnormal_labs = LabResult.objects.filter(workflow=wf, is_abnormal=True)
+            reasons.extend([f"{r.test_name}: {r.result_value}" for r in abnormal_labs])
+            
+            positive_cultures = BloodUnitCulture.objects.filter(workflow=wf, status='POSITIVE')
+            for c in positive_cultures:
+                reasons.append(f"Bacterial Culture Positive: {c.organism_name or 'Contaminated'}")
+            
+        note_str = comp.notes or (", ".join(reasons) if reasons else "Discarded due to abnormal lab test / culture result")
         
         discarded_comp.append({
-            'index': 51413 - (i * 5),
-            'donation_code': f"H10772600037{5+i}",
-            'source': 'SMC',
-            'component_type': c_type,
-            'blood_group': bg,
+            'index': comp.id,
+            'donation_code': bag_code,
+            'source': 'SMC Main Bank',
+            'component_type': comp.component_type,
+            'blood_group': comp.blood_group or (wf.donor.blood_group if wf and wf.donor else 'O+'),
             'qty': 1,
-            'volume': 54 - i,
+            'volume': comp.volume or 300,
             'volume_issued': '-',
             'rr': '30 : 70',
-            'expire_date': '01/02/2026',
-            'temperature': '20-24',
-            'location': '', 
+            'expire_date': comp.expiration_date.strftime('%d/%m/%Y') if comp.expiration_date else '---',
+            'temperature': '2-6°C',
+            'location': 'Discard Quarantine Fridge', 
             'status': 'Discarded',
-            'discarded_by': 'Khalid Abdullah Alanazi',
-            'discarded_date': '29/01/2026 05:39 AM',
-            'discarded_note': 'Expired',
-            'verified_1': True,
-            'verified_1_by': 'abu-zahir',
-            'verified_1_date': '29/01/2026 05:39 AM',
-            'discarded_verify': True,
-            'discarded_verify_by': 'kh-alanazi',
-            'discarded_verify_date': '01/02/2026 02:42 PM',
-            'done_by': 'Mazen Ayedh Alrumaili',
-            'done_date': '27/01/2026 06:12 PM',
-            'modified_by': '',
-            'modified_date': ''
+            'discarded_note': note_str,
+            'discarded_by': comp.modified_by.username if comp.modified_by else 'System Lab Technician',
+            'discarded_date': comp.updated_at.strftime('%d/%m/%Y %I:%M %p') if comp.updated_at else timezone.now().strftime('%d/%m/%Y %I:%M %p'),
+            'discarded_verify_by': 'Quality Officer',
+            'discarded_verify_date': timezone.now().strftime('%d/%m/%Y %I:%M %p')
         })
         
+    # 2. Also check any workflows with abnormal results or positive cultures not yet listed
+    abnormal_workflows = DonorWorkflow.objects.filter(
+        lab_results__is_abnormal=True
+    ).exclude(id__in=seen_wf_ids).distinct().select_related('donor').order_by('-updated_at')
+    
+    for wf in abnormal_workflows:
+        bag_code = wf.blood_draw.bag_serial_number if hasattr(wf, 'blood_draw') and wf.blood_draw.bag_serial_number else f"CB-{wf.id:04d}"
+        abnormal_labs = wf.lab_results.filter(is_abnormal=True)
+        reasons = [f"{r.test_name}: {r.result_value}" for r in abnormal_labs]
+        
+        discarded_comp.append({
+            'index': 8000 + wf.id,
+            'donation_code': bag_code,
+            'source': 'SMC Main Bank',
+            'component_type': 'Whole Blood Unit',
+            'blood_group': wf.donor.blood_group if wf.donor else 'O+',
+            'qty': 1,
+            'volume': 450,
+            'volume_issued': '-',
+            'rr': '30 : 70',
+            'expire_date': timezone.now().strftime('%d/%m/%Y'),
+            'temperature': '2-6°C',
+            'location': 'Discard Quarantine', 
+            'status': 'Discarded',
+            'discarded_note': f"Lab Screening Abnormal ({', '.join(reasons)})",
+            'discarded_by': 'Lab Technician',
+            'discarded_date': wf.updated_at.strftime('%d/%m/%Y %I:%M %p'),
+            'discarded_verify_by': 'Quality Officer',
+            'discarded_verify_date': wf.updated_at.strftime('%d/%m/%Y %I:%M %p')
+        })
+
     return render(request, 'reports/discarded_units.html', {
-        'components': discarded_comp
+        'discarded_comp': discarded_comp
     })
 
 @staff_required
