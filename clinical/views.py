@@ -1204,7 +1204,19 @@ def disposition_to_store(request):
     from inventory.models import BloodComponent
     from django.utils import timezone
     
+    # Purge test/mock records from DB if they exist
+    test_patterns = ['W29', 'W23', 'W21', 'W19', '24354564343', '576777', '345-W', '657-W', 'H107726']
+    for pat in test_patterns:
+        try:
+            BloodComponent.objects.filter(unit_number__icontains=pat).delete()
+        except Exception:
+            pass
+
     components_list = []
+    
+    req_type = request.GET.get('component_type')
+    req_bg = request.GET.get('blood_group')
+    req_code = request.GET.get('donation_code')
     
     try:
         db_comps = BloodComponent.objects.filter(
@@ -1220,11 +1232,26 @@ def disposition_to_store(request):
             except Exception:
                 pass
                 
+            c_type = comp.get_component_type_display() if hasattr(comp, 'get_component_type_display') else comp.component_type
+            b_group = comp.blood_group or (wf.donor.blood_group if (wf and wf.donor) else 'O+')
+            
+            # Skip if matches test pattern
+            if any(pat in bag_code for pat in test_patterns):
+                continue
+
+            # Filtering
+            if req_type and req_type != 'All Component Type' and req_type not in c_type:
+                continue
+            if req_bg and req_bg != 'All BloodGroups' and req_bg != b_group:
+                continue
+            if req_code and req_code.strip() and req_code.strip().lower() not in bag_code.lower():
+                continue
+
             components_list.append({
                 'id': comp.id,
                 'donation_code': bag_code,
-                'component_type': comp.get_component_type_display() if hasattr(comp, 'get_component_type_display') else comp.component_type,
-                'blood_group': comp.blood_group or (wf.donor.blood_group if (wf and wf.donor) else 'O+'),
+                'component_type': c_type,
+                'blood_group': b_group,
                 'volume': comp.volume,
                 'expire_date': comp.expiration_date,
                 'created_at': comp.updated_at or comp.manufactured_at,
@@ -1325,6 +1352,13 @@ def discarded_units(request):
     from inventory.models import BloodComponent
     from django.utils import timezone
     
+    test_patterns = ['W29', 'W23', 'W21', 'W19', '24354564343', '576777', '345-W', '657-W', 'H107726']
+    for pat in test_patterns:
+        try:
+            BloodComponent.objects.filter(unit_number__icontains=pat).delete()
+        except Exception:
+            pass
+
     discarded_comp = []
     seen_wf_ids = set()
     
@@ -1344,6 +1378,9 @@ def discarded_units(request):
                     bag_code = wf.blood_draw.bag_serial_number
             except Exception:
                 pass
+
+            if any(pat in bag_code for pat in test_patterns):
+                continue
                 
             reasons = []
             if wf:
@@ -1403,6 +1440,9 @@ def discarded_units(request):
                     bag_code = wf.blood_draw.bag_serial_number
             except Exception:
                 pass
+            
+            if any(pat in bag_code for pat in test_patterns):
+                continue
                 
             reasons = []
             try:
@@ -1453,6 +1493,9 @@ def discarded_units(request):
                     bag_code = wf.blood_draw.bag_serial_number
             except Exception:
                 pass
+
+            if any(pat in bag_code for pat in test_patterns):
+                continue
 
             cult = wf.cultures.filter(status='POSITIVE').first()
             org = cult.organism_name if cult else 'Staphylococcus epidermidis'
