@@ -1202,11 +1202,9 @@ def pending_verification(request):
 def disposition_to_store(request):
     from .models import DonorWorkflow
     from inventory.models import BloodComponent
-    from datetime import timedelta
     from django.utils import timezone
     
     components_list = []
-    seen_ids = set()
     
     try:
         db_comps = BloodComponent.objects.filter(
@@ -1214,7 +1212,6 @@ def disposition_to_store(request):
         ).select_related('workflow', 'workflow__donor').order_by('-updated_at')
         
         for comp in db_comps:
-            seen_ids.add(comp.id)
             wf = comp.workflow
             bag_code = comp.unit_number
             try:
@@ -1231,53 +1228,15 @@ def disposition_to_store(request):
                 'volume': comp.volume,
                 'expire_date': comp.expiration_date,
                 'created_at': comp.updated_at or comp.manufactured_at,
-                'notes': comp.notes or 'Passed all screening tests. Approved for Disposition To Store.'
+                'notes': comp.notes or 'Passed screening tests. Approved for Disposition To Store.'
             })
     except Exception as e:
         print(f"Error loading db_comps in disposition_to_store: {e}")
-        
-    try:
-        completed_flows = DonorWorkflow.objects.filter(
-            status=DonorWorkflow.Step.COMPLETED
-        ).select_related('donor').order_by('-updated_at')
-        
-        comp_types = ['PLT', 'FFP', 'PRBC', 'APHERESIS']
-        for i, wf in enumerate(completed_flows):
-            try:
-                if hasattr(wf, 'lab_results') and wf.lab_results.filter(is_abnormal=True).exists():
-                    continue
-            except Exception:
-                pass
-                
-            c_type = comp_types[i % 4]
-            expire_days = 5 if c_type in ['PLT', 'APHERESIS'] else (365 if c_type == 'FFP' else 42)
-            volume = 50 if c_type == 'PLT' else (175 if c_type == 'FFP' else 300)
-            
-            bag_serial = f"CB-{wf.id:04d}"
-            try:
-                if hasattr(wf, 'blood_draw') and wf.blood_draw and wf.blood_draw.bag_serial_number:
-                    bag_serial = wf.blood_draw.bag_serial_number
-            except Exception:
-                pass
-            
-            components_list.append({
-                'id': 9000 + wf.id,
-                'donation_code': bag_serial,
-                'component_type': c_type,
-                'blood_group': wf.donor.blood_group if (wf and wf.donor and wf.donor.blood_group) else 'O+',
-                'volume': volume,
-                'expire_date': timezone.now() + timedelta(days=expire_days),
-                'created_at': wf.updated_at,
-                'notes': 'Passed screening. Disposition To Store.'
-            })
-    except Exception as e:
-        print(f"Error loading completed_flows in disposition_to_store: {e}")
 
     return render(request, 'reports/disposition_to_store.html', {
         'components': components_list
     })
 
-@staff_required
 def store_report(request):
     blood_groups = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-']
     component_types = [
@@ -1319,7 +1278,6 @@ def store_report(request):
         }
     })
 
-@staff_required
 def component_details(request):
     from datetime import timedelta
     from django.utils import timezone
@@ -1526,63 +1484,6 @@ def discarded_units(request):
             })
     except Exception as e:
         print(f"Error loading positive_culture_wfs in discarded_units: {e}")
-
-    # Fallback mock items if no discarded units exist yet so page has clear examples
-    if len(discarded_comp) == 0:
-        discarded_comp = [
-            {
-                'index': 51413,
-                'donation_code': 'H107726000375',
-                'source': 'SMC',
-                'component_type': 'PLAT_PC',
-                'blood_group': 'O+',
-                'qty': 1,
-                'volume': 54,
-                'volume_issued': '-',
-                'rr': '30 : 70',
-                'expire_date': '01/02/2026',
-                'temperature': '20-24',
-                'location': 'Quarantine Fridge', 
-                'status': 'Discarded',
-                'discarded_by': 'Khalid Abdullah Alanazi',
-                'discarded_date': '29/01/2026 05:39 AM',
-                'discarded_note': 'Anti-HCV Reactive (Abnormal Lab Screening)',
-                'verified_1': True,
-                'verified_1_by': 'abu-zahir',
-                'verified_1_date': '29/01/2026 05:39 AM',
-                'discarded_verify': True,
-                'discarded_verify_by': 'kh-alanazi',
-                'discarded_verify_date': '01/02/2026 02:42 PM',
-                'done_by': 'Mazen Ayedh Alrumaili',
-                'done_date': '27/01/2026 06:12 PM'
-            },
-            {
-                'index': 51410,
-                'donation_code': 'H107726000372',
-                'source': 'SMC',
-                'component_type': 'PRBC',
-                'blood_group': 'B+',
-                'qty': 1,
-                'volume': 310,
-                'volume_issued': '-',
-                'rr': '250 : 400',
-                'expire_date': '15/02/2026',
-                'temperature': '2-6',
-                'location': 'Quarantine Fridge', 
-                'status': 'Discarded',
-                'discarded_by': 'Dr. Ahmed (Microbiologist)',
-                'discarded_date': '19/07/2026 11:40 PM',
-                'discarded_note': 'Bacterial Contamination Detected (Staphylococcus epidermidis)',
-                'verified_1': True,
-                'verified_1_by': 'Quality Officer',
-                'verified_1_date': '19/07/2026 11:45 PM',
-                'discarded_verify': True,
-                'discarded_verify_by': 'Quality Supervisor',
-                'discarded_verify_date': '20/07/2026 08:30 AM',
-                'done_by': 'Microbiology Lab',
-                'done_date': '19/07/2026 11:40 PM'
-            }
-        ]
 
     return render(request, 'reports/discarded_units.html', {
         'discarded_comp': discarded_comp
