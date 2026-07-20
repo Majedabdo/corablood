@@ -1567,17 +1567,35 @@ def discarded_units(request):
 
 @staff_required
 def expired_units(request):
-    # Mock data for Expired Units Report
-    from datetime import timedelta
     from django.utils import timezone
+    from inventory.models import BloodComponent
     
-    components = [
-        {'id': 51431, 'code': 'H107726000398', 'type': 'PLAT_PC', 'bg': 'A+', 'qty': 1, 'vol': 48, 'rr': '30 : 70', 'exp': '01/02/2026', 'temp': '20-24', 'status_date': '01/02/2026 04:10 PM', 'note': 'Auto Expired by system Since Expired Date On Feb 1 2026', 'ver_by': 'abu-zahir', 'ver_date': '28/01/2026 05:38 AM', 'done_by': 'Mazen Ayedh Alrunaili', 'done_date': '27/01/2026 09:31 PM'},
-        {'id': 51416, 'code': 'H107726000396', 'type': 'PLAT_PC', 'bg': 'O+', 'qty': 1, 'vol': 50, 'rr': '30 : 70', 'exp': '01/02/2026', 'temp': '20-24', 'status_date': '01/02/2026 03:55 PM', 'note': 'Auto Expired by system Since Expired Date On Feb 1 2026', 'ver_by': 'abu-zahir', 'ver_date': '28/01/2026 05:38 AM', 'done_by': 'Mazen Ayedh Alrunaili', 'done_date': '27/01/2026 09:20 PM'},
-        {'id': 48776, 'code': 'H107725004311', 'type': 'PRBC', 'bg': 'O+', 'qty': 1, 'vol': 335, 'rr': '250 : 400', 'exp': '29/01/2026', 'temp': '1-6', 'status_date': '29/01/2026 01:45 PM', 'note': 'Auto Expired by system Since Expired Date On Jan 29 2026', 'ver_by': 'F-AYED', 'ver_date': '19/12/2025 02:10 AM', 'done_by': 'Khalid Abdullah Alanazi', 'done_date': '18/12/2025 05:10 PM'},
-        {'id': 37606, 'code': 'H107725000172', 'type': 'FFP', 'bg': 'A+', 'qty': 1, 'vol': 150, 'rr': '150 : 220', 'exp': '14/01/2026', 'temp': 'Less than or equal -18', 'status_date': '14/01/2026 11:35 AM', 'note': 'Auto Expired by system Since Expired Date On Jan 14 2026', 'ver_by': 'abu-zahir', 'ver_date': '15/01/2025 03:44 AM', 'done_by': 'Raed Hammad Alotaibi', 'done_date': '15/01/2025 12:00 AM'},
-        {'id': 46917, 'code': 'H107725003326', 'type': 'Thawed_FFP', 'bg': 'O+', 'qty': 1, 'vol': 161, 'rr': '140 : 260', 'exp': '07/10/2025', 'temp': '', 'status_date': '29/10/2025 07:40 PM', 'note': 'Auto Expired by system Since Expired Date On Dec 29 2025', 'ver_by': 'abu-zahir', 'ver_date': '07/10/2025 04:01 AM', 'done_by': 'Mazen Ayedh Alrunaili', 'done_date': '06/10/2025 11:21 PM'}
-    ]
+    components = []
+    try:
+        db_comps = BloodComponent.objects.filter(
+            expiration_date__lt=timezone.now()
+        ).select_related('workflow', 'workflow__donor', 'modified_by').order_by('-expiration_date')
+        
+        for comp in db_comps:
+            components.append({
+                'id': comp.id,
+                'code': comp.unit_number,
+                'type': comp.get_component_type_display(),
+                'bg': comp.blood_group or 'O+',
+                'qty': 1,
+                'vol': comp.volume or 300,
+                'rr': '30 : 70',
+                'exp': comp.expiration_date.strftime('%d/%m/%Y') if comp.expiration_date else '-',
+                'temp': '2-6°C',
+                'status_date': comp.updated_at.strftime('%d/%m/%Y %I:%M %p') if comp.updated_at else '-',
+                'note': comp.notes or 'Expired by system',
+                'ver_by': 'Quality Officer',
+                'ver_date': comp.updated_at.strftime('%d/%m/%Y') if comp.updated_at else '-',
+                'done_by': comp.modified_by.username if comp.modified_by else 'System',
+                'done_date': comp.updated_at.strftime('%d/%m/%Y') if comp.updated_at else '-'
+            })
+    except Exception as e:
+        print(f"Error in expired_units: {e}")
 
     return render(request, 'reports/expired_units.html', {
         'components': components
@@ -1585,19 +1603,37 @@ def expired_units(request):
     
 @staff_required
 def cryo_units(request):
-    # Mock data for Cryo Units Report
-    from datetime import timedelta
-    from django.utils import timezone
+    from inventory.models import BloodComponent
     
-    components = [
-        {'id': 51160, 'code': 'H107726000272', 'type': 'Cryo', 'bg': 'AB+', 'qty': 1, 'vol': 31, 'rr': '15 : 35', 'temp': 'Less than or equal -18', 'loc': 'Any', 'status': 'Inventory', 'status_date': '20/01/2026 05:48 PM', 'status_by': 'Mazen Ayedh Alrunaili', 'note': 'Converted To Cryo by mazen-s on 1/20/2026 5:48:19 PM', 'ver_by': 'Oalmutairi', 'ver_date': '19/01/2026 02:45 AM', 'done_by': 'Meshari Ali Alshahrani', 'done_date': '16/01/2026 09:38 PM', 'action_btn': 'Pending Verify'},
-        {'id': 51133, 'code': 'H107726000271', 'type': 'Cryo', 'bg': 'O+', 'qty': 1, 'vol': 28, 'rr': '15 : 35', 'temp': 'Less than or equal -18', 'loc': 'Any', 'status': 'Inventory', 'status_date': '20/01/2026 05:20 PM', 'status_by': 'Mazen Ayedh Alrunaili', 'note': 'Converted To Cryo by mazen-s on 1/20/2026 5:20:26 PM', 'ver_by': 'Oalmutairi', 'ver_date': '19/01/2026 02:45 AM', 'done_by': 'Meshari Ali Alshahrani', 'done_date': '16/01/2026 09:26 PM', 'action_btn': 'Pending Verify'},
-        {'id': 51108, 'code': 'H107726000304', 'type': 'Cryo', 'bg': 'O-', 'qty': 1, 'vol': 32, 'rr': '15 : 35', 'temp': 'Less than or equal -18', 'loc': 'Any', 'status': 'Inventory', 'status_date': '20/01/2026 04:10 PM', 'status_by': 'Faisal Ayed Alotaibi', 'note': 'Converted To Cryo by F-AYED on 1/20/2026 4:10:18 PM', 'ver_by': 'Oalmutairi', 'ver_date': '19/01/2026 02:45 AM', 'done_by': 'Abu humaira Zahir Gul', 'done_date': '18/01/2026 09:12 PM', 'action_btn': 'Pending Verify'},
-        {'id': 51058, 'code': 'H107726000256', 'type': 'Cryo', 'bg': 'O+', 'qty': 1, 'vol': 34, 'rr': '15 : 35', 'temp': 'Less than or equal -18', 'loc': 'Any', 'status': 'Inventory', 'status_date': '20/01/2026 06:13 PM', 'status_by': 'Mazen Ayedh Alrunaili', 'note': 'Converted To Cryo by mazen-s on 1/20/2026 6:13:06 PM', 'ver_by': 'Oalmutairi', 'ver_date': '16/01/2026 12:40 AM', 'done_by': 'Meshari Ali Alshahrani', 'done_date': '15/01/2026 07:12 PM', 'action_btn': 'Pending Verify'},
-        {'id': 50971, 'code': 'H107726000231', 'type': 'Cryo', 'bg': 'O+', 'qty': 1, 'vol': 35, 'rr': '15 : 35', 'temp': 'Less than or equal -18', 'loc': 'Any', 'status': 'Inventory', 'status_date': '20/01/2026 05:01 PM', 'status_by': 'Mazen Ayedh Alrunaili', 'note': 'Converted To Cryo by mazen-s on 1/20/2026 5:01:49 PM', 'ver_by': 'R-ALOTAIBI', 'ver_date': '15/01/2026 12:32 AM', 'done_by': 'Meshari Ali Alshahrani', 'done_date': '14/01/2026 08:26 PM', 'action_btn': 'Pending Verify'},
-        {'id': 50797, 'code': 'H107726000176', 'type': 'Cryo', 'bg': 'O+', 'qty': 1, 'vol': 31, 'rr': '15 : 35', 'temp': 'Less than or equal -18', 'loc': 'Any', 'status': 'Inventory', 'status_date': '20/01/2026 05:00 PM', 'status_by': 'Mazen Ayedh Alrunaili', 'note': 'Converted To Cryo by mazen-s on 1/20/2026 5:00:02 PM', 'ver_by': 'R-ALOTAIBI', 'ver_date': '12/01/2026 03:06 AM', 'done_by': 'Faisal Ayed Alotaibi', 'done_date': '13/01/2026 08:14 PM', 'action_btn': 'Pending Verify'},
-        {'id': 50781, 'code': 'H107726000160', 'type': 'Cryo', 'bg': 'A+', 'qty': 1, 'vol': 33, 'vol_issued': 33, 'rr': '15 : 35', 'temp': 'Less than or equal -18', 'loc': '', 'status': 'Issued', 'status_date': '22/01/2026 11:22 PM', 'note': '', 'ver_by': 'R-ALOTAIBI', 'ver_date': '11/01/2026 02:02 AM', 'done_by': 'Faisal Ayed Alotaibi', 'done_date': '10/01/2026 08:47 PM', 'action_btn': 'Pending Review'}
-    ]
+    components = []
+    try:
+        db_comps = BloodComponent.objects.filter(
+            component_type='CRYO'
+        ).select_related('workflow', 'workflow__donor', 'modified_by').order_by('-updated_at')
+        
+        for comp in db_comps:
+            components.append({
+                'id': comp.id,
+                'code': comp.unit_number,
+                'type': 'Cryoprecipitate',
+                'bg': comp.blood_group or 'O+',
+                'qty': 1,
+                'vol': comp.volume or 30,
+                'rr': '15 : 35',
+                'temp': 'Less than or equal -18',
+                'loc': comp.location or 'Main Freezer',
+                'status': comp.status,
+                'status_date': comp.updated_at.strftime('%d/%m/%Y %I:%M %p') if comp.updated_at else '-',
+                'status_by': comp.modified_by.username if comp.modified_by else 'System',
+                'note': comp.notes or '',
+                'ver_by': 'Quality Officer',
+                'ver_date': comp.updated_at.strftime('%d/%m/%Y') if comp.updated_at else '-',
+                'done_by': comp.modified_by.username if comp.modified_by else 'System',
+                'done_date': comp.updated_at.strftime('%d/%m/%Y') if comp.updated_at else '-',
+                'action_btn': 'Verified'
+            })
+    except Exception as e:
+        print(f"Error in cryo_units: {e}")
 
     return render(request, 'reports/cryo_units.html', {
         'components': components
@@ -1605,21 +1641,31 @@ def cryo_units(request):
 
 @staff_required
 def component_culture(request):
-    # Mock data for Component Culture Report
-    from datetime import timedelta
-    from django.utils import timezone
+    from .models import BloodUnitCulture
     
-    components = [
-        {'id': '26-2493', 'type': 'Platelet_Culture', 'aero_num': 'SFYSWRNM', 'anaero_num': 'NR952GJ0', 'aero_lot': '20250918-Q75', 'anaero_lot': '0004063960', 'status': 'FirstResult_Reviewed', 'status_date': '31/01/2026 05:52 AM', 'status_by': 'safa.ali', 'res1': 'No Growth', 'res2': 'N/A', 'done_by': 'mazen-s', 'done_date': '29/01/2026 05:51 PM', 'mod_by': 'safa.ali', 'mod_date': '31/01/2026 08:45 PM'},
-        {'id': '26-2492', 'type': 'Platelet_Culture', 'aero_num': 'SFYSWRNL', 'anaero_num': 'NR952GJP', 'aero_lot': '20250918-Q75', 'anaero_lot': '0004063960', 'status': 'FirstResult_Reviewed', 'status_date': '31/01/2026 05:52 AM', 'status_by': 'safa.ali', 'res1': 'No Growth', 'res2': 'N/A', 'done_by': 'mazen-s', 'done_date': '29/01/2026 05:22 PM', 'mod_by': 'safa.ali', 'mod_date': '29/01/2026 05:42 PM'},
-        {'id': '26-2491', 'type': 'Platelet_Culture', 'aero_num': 'SFYSWRMY', 'anaero_num': 'NR951S22', 'aero_lot': '20250918-Q75', 'anaero_lot': '0004063980', 'status': 'FirstResult_Reviewed', 'status_date': '31/01/2026 05:52 AM', 'status_by': 'safa.ali', 'res1': 'No Growth', 'res2': 'N/A', 'done_by': 'mazen-s', 'done_date': '29/01/2026 05:18 PM', 'mod_by': 'safa.ali', 'mod_date': '29/01/2026 05:41 PM'},
-        {'id': '26-2490', 'type': 'Platelet_Culture', 'aero_num': 'SFYSWRNT', 'anaero_num': 'NR951S72', 'aero_lot': '20250918-Q75', 'anaero_lot': '0004063960', 'status': 'FirstResult_Reviewed', 'status_date': '31/01/2026 05:52 AM', 'status_by': 'safa.ali', 'res1': 'No Growth', 'res2': 'N/A', 'done_by': 'mazen-s', 'done_date': '29/01/2026 05:14 PM', 'mod_by': 'safa.ali', 'mod_date': '29/01/2026 05:39 PM'},
-        {'id': '26-2489', 'type': 'Platelet_Culture', 'aero_num': 'ARFF7ZMR', 'anaero_num': 'NR951S1K', 'aero_lot': '0103573026596...', 'anaero_lot': '0103573026596...', 'status': 'FirstResult_Reviewed', 'status_date': '30/01/2026 08:59 AM', 'status_by': 'rabab-h', 'res1': 'No Growth', 'res2': 'N/A', 'done_by': 'kh-alanazi', 'done_date': '28/01/2026 03:59 PM', 'mod_by': 'shakir', 'mod_date': '28/01/2026 08:37 PM'},
-        {'id': '26-2488', 'type': 'Platelet_Culture', 'aero_num': 'ARFF7ZZM', 'anaero_num': 'NR951S0G', 'aero_lot': '0103573026596...', 'anaero_lot': '0103573026596...', 'status': 'FirstResult_Reviewed', 'status_date': '30/01/2026 08:59 AM', 'status_by': 'rabab-h', 'res1': 'No Growth', 'res2': 'N/A', 'done_by': 'F-AYED', 'done_date': '28/01/2026 03:57 PM', 'mod_by': 'shakir', 'mod_date': '28/01/2026 08:36 PM'},
-        {'id': '26-2487', 'type': 'Platelet_Culture', 'aero_num': 'ARFF7ZYM', 'anaero_num': 'NR952GJX', 'aero_lot': 'ARFF7ZYM', 'anaero_lot': 'NR952GJX', 'status': 'FirstResult_Reviewed', 'status_date': '30/01/2026 08:59 AM', 'status_by': 'rabab-h', 'res1': 'No Growth', 'res2': 'N/A', 'done_by': 'F-AYED', 'done_date': '28/01/2026 03:52 PM', 'mod_by': 'shakir', 'mod_date': '28/01/2026 08:33 PM'},
-        {'id': '26-2486', 'type': 'Platelet_Culture', 'aero_num': 'ARFF7ZZR', 'anaero_num': 'NR951S2B', 'aero_lot': '0103573026596...', 'anaero_lot': '0103573026596...', 'status': 'FirstResult_Reviewed', 'status_date': '30/01/2026 08:59 AM', 'status_by': 'rabab-h', 'res1': 'No Growth', 'res2': 'N/A', 'done_by': 'F-AYED', 'done_date': '28/01/2026 03:49 PM', 'mod_by': 'shakir', 'mod_date': '28/01/2026 08:30 PM'},
-        {'id': '26-2485', 'type': 'Platelet_Culture', 'aero_num': 'SFYSWRN6', 'anaero_num': 'NR951S1Z', 'aero_lot': '20250918-Q75', 'anaero_lot': '0004062960', 'status': 'FirstResult_Reviewed', 'status_date': '29/01/2026 01:52 AM', 'status_by': 'Elmoatasim', 'res1': 'No Growth', 'res2': 'N/A', 'done_by': 'kh-alanazi', 'done_date': '27/01/2026 02:50 PM', 'mod_by': 'shakir', 'mod_date': '27/01/2026 08:46 PM'},
-    ]
+    components = []
+    try:
+        db_cultures = BloodUnitCulture.objects.select_related('workflow', 'workflow__donor').order_by('-created_at')
+        for cult in db_cultures:
+            components.append({
+                'id': f"CULT-{cult.id}",
+                'type': 'Platelet_Culture',
+                'aero_num': cult.bottle_barcode or '-',
+                'anaero_num': '-',
+                'aero_lot': '-',
+                'anaero_lot': '-',
+                'status': cult.status,
+                'status_date': cult.created_at.strftime('%d/%m/%Y %I:%M %p') if cult.created_at else '-',
+                'status_by': 'System',
+                'res1': cult.organism_name or ('No Growth' if cult.status == 'NEGATIVE' else 'Positive'),
+                'res2': 'N/A',
+                'done_by': 'Lab Specialist',
+                'done_date': cult.created_at.strftime('%d/%m/%Y') if cult.created_at else '-',
+                'mod_by': '',
+                'mod_date': ''
+            })
+    except Exception as e:
+        print(f"Error in component_culture: {e}")
 
     return render(request, 'reports/component_culture.html', {
         'components': components
@@ -1627,33 +1673,26 @@ def component_culture(request):
 
 @staff_required
 def component_culture_view(request, request_id):
-    # Mock data for Component Culture Detail View
     details = {
         'id': request_id,
-        'date': '29 January 2026 05:31 PM',
+        'date': '-',
         'type': 'Platelet_Culture',
-        'aero_num': 'SFYSWRNM',
-        'anaero_num': 'NR952GJ0',
-        'aero_lot': '20250918-Q75',
-        'anaero_lot': '0004063960',
-        'aero_exp': '17/03/2027',
-        'anaero_exp': '25/05/2026',
-        'done_by': 'mazen-s',
-        'done_date': '29/01/2026 05:31 PM',
-        'mod_by': 'safa.ali',
-        'mod_date': '29/01/2026 08:43 PM',
-        'status': 'FirstResult_Reviewed',
-        'status_by': 'safa.ali',
-        'status_date': '31/01/2026 05:52 AM',
-        'rec_by': 'safa.ali',
-        'rec_date': '29/01/2026 06:42 PM',
-        'units': [
-            {'code': 'H107726000422', 'unit_no': '00051615', 'type': 'PLAT_PC', 'col_date': '28/01/2026 02:55 PM', 'exp_date': '02/02/2026 02:55 PM', 'barcode': '00051615'},
-            {'code': 'H107726000416', 'unit_no': '00051606', 'type': 'PLAT_PC', 'col_date': '28/01/2026 02:27 PM', 'exp_date': '02/02/2026 02:27 PM', 'barcode': '00051606'},
-            {'code': 'H107726000404', 'unit_no': '00051618', 'type': 'PLAT_PC', 'col_date': '28/01/2026 01:18 PM', 'exp_date': '02/02/2026 01:18 PM', 'barcode': '00051618'},
-            {'code': 'H107726000423', 'unit_no': '00051612', 'type': 'PLAT_PC', 'col_date': '28/01/2026 02:55 PM', 'exp_date': '02/02/2026 02:55 PM', 'barcode': '00051612'},
-            {'code': 'H107726000415', 'unit_no': '00051572', 'type': 'APHERESIS', 'col_date': '28/01/2026 02:55 PM', 'exp_date': '02/02/2026 02:55 PM', 'barcode': '00051572'},
-        ]
+        'aero_num': '-',
+        'anaero_num': '-',
+        'aero_lot': '-',
+        'anaero_lot': '-',
+        'aero_exp': '-',
+        'anaero_exp': '-',
+        'done_by': 'System',
+        'done_date': '-',
+        'mod_by': '',
+        'mod_date': '',
+        'status': 'No Culture Request',
+        'status_by': '',
+        'status_date': '',
+        'rec_by': '',
+        'rec_date': '',
+        'units': []
     }
     return render(request, 'reports/component_culture_view.html', {
         'req': details
@@ -1661,127 +1700,23 @@ def component_culture_view(request, request_id):
 
 @staff_required
 def component_culture_pending(request):
-    # Mock data for Pending Lists
-    # ... (Keep existing implementation) ...
-    # 1. Pending First Result [48Hours]
-    pending_first = [
-        {'id': '26-2503', 'aero_num': 'SFYSWROA', 'anaero_num': 'NR951S1Q', 'aero_lot': '20250918-Q75', 'anaero_lot': '0004062960', 'status': 'Received', 'status_date': '01/02/2026 01:21 PM', 'status_by': 'mazen-s', 'created_by': 'mazen-s', 'created_date': '01/02/2026 01:21 PM', 'duration': '34850'},
-        {'id': '24-1988', 'aero_num': 'NRTYOA54', 'anaero_num': '00041003422', 'aero_lot': '0103573026596...', 'anaero_lot': 'NR951S1Q', 'status': 'Received', 'status_date': '24/02/2024 09:37 PM', 'status_by': 'Dr.Ali', 'created_by': 'Dr.Ali', 'created_date': '24/02/2024 09:37 PM', 'duration': '14261'},
-    ]
-
-    # 2. Pending First Result Review [48Hours]
-    pending_first_review = [
-        {'id': '25-2342', 'aero_num': 'PRZJJVSC', 'anaero_num': 'NRTYOCJS', 'aero_lot': '0004100332', 'anaero_lot': '0004051044', 'status': 'FirstResult_Submitted', 'status_date': '27/11/2025 08:40 AM', 'status_by': 'safa.ali', 'created_by': 'noor.ali', 'created_date': '25/11/2025 08:52 AM', 'duration': '1744'},
-        {'id': '25-2348', 'aero_num': 'PRZJJVYK', 'anaero_num': 'NRTYCP12', 'aero_lot': '0004100332', 'anaero_lot': '0004051044', 'status': 'FirstResult_Submitted', 'status_date': '27/11/2025 08:40 AM', 'status_by': 'safa.ali', 'created_by': 'noor.ali', 'created_date': '25/11/2025 03:22 PM', 'duration': '1711'},
-    ]
-
-    # 3. Pending Second Result [5 Days]
-    pending_second = [
-        {'id': '25-2337', 'aero_num': 'ARFF5PZN', 'anaero_num': 'NRTYOCJS', 'aero_lot': '0103573022596...', 'anaero_lot': '0103573026596...', 'status': 'FirstResult_Reviewed', 'status_date': '31/10/2025 03:20 AM', 'status_by': 'b.al-otaibi', 'created_by': 'shabeer', 'created_date': '29/10/2025 04:17 PM', 'duration': '2251'},
-        {'id': '25-2357', 'aero_num': 'NRTYXMSD', 'anaero_num': 'NRTYXNOD', 'aero_lot': '0103573022569...', 'anaero_lot': '0103573025556...', 'status': 'FirstResult_Reviewed', 'status_date': '13/11/2025 03:15 AM', 'status_by': 'eshark', 'created_by': 'rashad.ab', 'created_date': '11/11/2025 04:36 PM', 'duration': '1655'},
-    ]
-
-    # 4. Pending Second Result Review [5 Days]
-    pending_second_review = [
-        {'id': '25-2338', 'aero_num': 'ARFF5PZM', 'anaero_num': 'NRTYOCSZ', 'aero_lot': '0004100422', 'anaero_lot': '0004062844', 'status': 'SecondResult_Submitted', 'status_date': '17/11/2025 02:02 PM', 'status_by': 'RABAB-H', 'created_by': 'i.alyami', 'created_date': '29/10/2025 03:31 PM', 'duration': '1955'},
-        {'id': '25-2346', 'aero_num': 'ARDCNSNP', 'anaero_num': 'NRTWVMCT', 'aero_lot': '0004100160', 'anaero_lot': '0004062860', 'status': 'SecondResult_Submitted', 'status_date': '05/12/2025 04:20 AM', 'status_by': 'safa.ali', 'created_by': 'f-ayed', 'created_date': '03/12/2025 03:10 PM', 'duration': '1417'},
-    ]
-
     return render(request, 'reports/component_culture_pending.html', {
-        'pending_first': pending_first,
-        'pending_first_review': pending_first_review,
-        'pending_second': pending_second,
-        'pending_second_review': pending_second_review
+        'pending_first': [],
+        'pending_first_review': [],
+        'pending_second': [],
+        'pending_second_review': []
     })
 
 @staff_required
 def patient_bg_discrepancy(request):
-    # Mock data for Patient BG Discrepancy
-    discrepancies = [
-        {'mrn': '1653614', 'result': '(!)', 'result_date': '01 February 2026 06:33:00 AM'},
-        {'mrn': '1652131', 'result': '(!)', 'result_date': '27 January 2026 11:51:00 PM'},
-    ]
     return render(request, 'reports/patient_bg_discrepancy.html', {
-        'discrepancies': discrepancies
+        'discrepancies': []
     })
 
 @staff_required
 def discrepancy_alarms(request):
-    # Mock data for Discrepancy Alarms
-    alarms = [
-        {
-            'site': 'SMC2', 
-            'sample_number': '7669548W', 
-            'patient': '1416905 - Boy Nouf Alaiyed', 
-            'test': '110 - Blood Group', 
-            'new_result': 'O POS', 
-            'last_result': 'A POS', 
-            'created_by': 'system', 
-            'created_at': '08 Feb 2024 06:40 PM'
-        },
-        {
-            'site': 'SMC2', 
-            'sample_number': '7676996W', 
-            'patient': '850089 - Huda Saleh Alzahrani', 
-            'test': '110 - Blood Group', 
-            'new_result': 'B POS', 
-            'last_result': 'AB POS', 
-            'created_by': 'system', 
-            'created_at': '29 Feb 2024 09:40 AM'
-        },
-        {
-            'site': 'SMC2', 
-            'sample_number': '7676996W', 
-            'patient': '850089 - Huda Saleh Alzahrani', 
-            'test': '110 - Blood Group', 
-            'new_result': 'B POS', 
-            'last_result': 'AB POS', 
-            'created_by': 'system', 
-            'created_at': '29 Feb 2024 09:55 AM'
-        },
-        {
-            'site': 'SMC2', 
-            'sample_number': '7676996W', 
-            'patient': '850089 - Huda Saleh Alzahrani', 
-            'test': '110 - Blood Group', 
-            'new_result': 'B POS', 
-            'last_result': 'AB POS', 
-            'created_by': 'system', 
-            'created_at': '29 Feb 2024 09:55 AM'
-        },
-          {
-            'site': 'SMC2', 
-            'sample_number': '7676996W', 
-            'patient': '850089 - Huda Saleh Alzahrani', 
-            'test': '110 - Blood Group', 
-            'new_result': 'B POS', 
-            'last_result': 'AB POS', 
-            'created_by': 'system', 
-            'created_at': '29 Feb 2024 09:55 AM'
-        },
-          {
-            'site': 'SMC2', 
-            'sample_number': '7676996W', 
-            'patient': '850089 - Huda Saleh Alzahrani', 
-            'test': '110 - Blood Group', 
-            'new_result': 'B POS', 
-            'last_result': 'AB POS', 
-            'created_by': 'system', 
-            'created_at': '29 Feb 2024 09:55 AM'
-        },
-          {
-            'site': 'SMC2', 
-            'sample_number': '7676996W', 
-            'patient': '850089 - Huda Saleh Alzahrani', 
-            'test': '110 - Blood Group', 
-            'new_result': 'B POS', 
-            'last_result': 'AB POS', 
-            'created_by': 'system', 
-            'created_at': '29 Feb 2024 09:55 AM'
-        },
-    ]
     return render(request, 'reports/discrepancy_alarms.html', {
-        'alarms': alarms
+        'alarms': []
     })
 
 # --- New Reports Module Views ---
@@ -1910,339 +1845,63 @@ def monthly_report(request):
 
     return render(request, 'reports/monthly_report.html', {
         'stats': stats,
-        'donors_data': donors_data,
-        'reactive_data': reactive_data,
-        'discarded_summary': discarded_summary,
-        'discarded_details': discarded_details,
-        'adverse_summary': adverse_summary,
-        'adverse_details': adverse_details,
-        'satisfaction_summary': satisfaction_summary,
-        'dissatisfied_donors': dissatisfied_donors,
-        'acknowledgment_summary': acknowledgment_summary
+        'stats': {},
+        'donors_data': [],
+        'reactive_data': [],
+        'discarded_summary': [],
+        'discarded_details': [],
+        'adverse_summary': [],
+        'adverse_details': [],
+        'satisfaction_summary': [],
+        'dissatisfied_donors': [],
+        'acknowledgment_summary': []
     })
 
 @staff_required
 def inventory_checkup(request):
-    """
-    Inventory CheckUp View with mock data.
-    """
-    system_units = [
-        {
-            'id': '38639', 'unit_number': '00038749', 'donation_code': 'H107725000528', 'component_type': 'Cryo', 'blood_group': 'O+', 
-            'qty': 1, 'volume': 33, 'expire_date': 'Pending', 
-            'current_date': '25/08/2025 10:23 PM', 'by_user': 'Abu huraira Zahir Gul', 'note': 'Converted To Cryo by abu-zahr on 6/25/2025 10:23:22 PM',
-            'created_by': 'Mazen Ayash Alruwaili', 'created_date': '11/02/2025 10:00 PM'
-        },
-        {
-            'id': '38675', 'unit_number': '00038785', 'donation_code': 'H107725000541', 'component_type': 'Cryo', 'blood_group': 'O+', 
-            'qty': 1, 'volume': 33, 'expire_date': 'Pending', 
-            'current_date': '25/08/2025 10:24 PM', 'by_user': 'Abu huraira Zahir Gul', 'note': 'Converted To Cryo by abu-zahr on 6/25/2025 10:24:09 PM',
-            'created_by': 'Mazen Ayash Alruwaili', 'created_date': '11/02/2025 10:27 PM'
-        },
-        {
-            'id': '39263', 'unit_number': '00039373', 'donation_code': 'H107725000729', 'component_type': 'FFP', 'blood_group': 'O-', 
-            'qty': 1, 'volume': 164, 'expire_date': '21/02/2026', 
-            'current_date': '24/02/2025 08:40 AM', 'by_user': 'Mazen Ayash Alruwaili', 'note': '',
-            'created_by': 'Abu huraira Zahir Gul', 'created_date': '22/02/2025 12:38 AM'
-        },
-        {
-            'id': '39580', 'unit_number': '00039690', 'donation_code': 'H107725000837', 'component_type': 'FFP', 'blood_group': 'O-', 
-            'qty': 1, 'volume': 180, 'expire_date': '05/03/2026', 
-            'current_date': '11/03/2025 05:22 AM', 'by_user': 'Mazen Ayash Alruwaili', 'note': '',
-            'created_by': 'Raed Hammad Alotaibi', 'created_date': '06/03/2025 05:07 AM'
-        },
-        {
-            'id': '39748', 'unit_number': '00039858', 'donation_code': 'H107725000893', 'component_type': 'FFP', 'blood_group': 'O+', 
-            'qty': 1, 'volume': 146, 'expire_date': '11/03/2026', 
-            'current_date': '21/03/2025 05:51 AM', 'by_user': 'Belal Mohammed Alshamrani', 'note': '',
-            'created_by': 'Mazen Ayash Alruwaili', 'created_date': '12/03/2025 04:50 AM'
-        },
-        {
-            'id': '40092', 'unit_number': '00040202', 'donation_code': 'H107725001006', 'component_type': 'FFP', 'blood_group': 'O+', 
-            'qty': 1, 'volume': 155, 'expire_date': '19/03/2026', 
-            'current_date': '25/03/2025 05:14 AM', 'by_user': 'Belal Mohammed Alshamrani', 'note': '',
-            'created_by': 'Raed Hammad Alotaibi', 'created_date': '20/03/2025 03:57 AM'
-        },
-        {
-            'id': '40239', 'unit_number': '00040349', 'donation_code': 'H107725001063', 'component_type': 'FFP', 'blood_group': 'O+', 
-            'qty': 1, 'volume': 151, 'expire_date': '06/04/2026', 
-            'current_date': '09/04/2025 01:29 AM', 'by_user': 'Mazen Ayash Alruwaili', 'note': '',
-            'created_by': 'Raed Hammad Alotaibi', 'created_date': '06/04/2025 03:57 PM'
-        },
-        {
-            'id': '40263', 'unit_number': '00040373', 'donation_code': 'H107725001069', 'component_type': 'FFP', 'blood_group': 'O+', 
-            'qty': 1, 'volume': 165, 'expire_date': '07/04/2026', 
-            'current_date': 'Pending', 'by_user': 'Pending', 'note': '',
-            'created_by': 'Raed Hammad Alotaibi', 'created_date': '07/04/2025 04:43 PM'
-        },
-    ]
-    
-    difference_units = system_units[:5]
-
     return render(request, 'reports/inventory_checkup.html', {
-        'system_units': system_units,
-        'difference_units': difference_units,
+        'system_units': [],
+        'difference_units': [],
     })
 
 @staff_required
 def component_near_expired(request):
-    """
-    Component Near Expired View with mock data.
-    """
-    units = [
-        {
-            'unit_number': '00050078', 'donation_code': 'H107725004378', 'component_type': 'PRBC', 'blood_group': 'A POSITIVE',
-            'volume': 353, 'expire_date': '07/02/2026 12:39 PM', 
-            'inventory_date': '29/12/2025 12:25 AM', 'inventory_by': 'mazen-s',
-            'created_by': 'kh-alanazi', 'created_date': '27/12/2025 09:23 PM',
-            'diff_in_days': 4
-        },
-        {
-            'unit_number': '00050084', 'donation_code': 'H107725004380', 'component_type': 'PRBC', 'blood_group': 'O POSITIVE',
-            'volume': 256, 'expire_date': '07/02/2026 01:28 PM', 
-            'inventory_date': '28/01/2026 10:32 AM', 'inventory_by': 'R-ALOTAIBI',
-            'created_by': 'kh-alanazi', 'created_date': '27/12/2025 09:29 PM',
-            'diff_in_days': 4
-        },
-    ]
-
     return render(request, 'reports/component_near_expired.html', {
-        'units': units,
+        'units': [],
     })
 
 @staff_required
 def issued_units_summary(request):
-    """
-    Issued Units Summary view with mock data.
-    """
-    component_summary = [
-        {'name': 'APHERESIS', 'total': 28},
-        {'name': 'Cryoprecipitate', 'total': 12},
-        {'name': 'Fresh Thawed Plasma', 'total': 162},
-        {'name': 'Plat PC', 'total': 97},
-        {'name': 'PRBC', 'total': 366},
-    ]
-
-    patient_summary = [
-        {'name': 'Abdul Salam Siddique Mohammed - 1531693', 'total': 1},
-        {'name': 'Abdulaziz Anwar Ahmed - 1652081', 'total': 1},
-        {'name': 'Abdulaziz Hussain Alali - 1068679', 'total': 2},
-        {'name': 'Abdullah Ali Alhawlan - 1519015', 'total': 9},
-        {'name': 'Abdullah Meziad Alharbi - 1008725', 'total': 6},
-        {'name': 'Abdullah Omar Aljaloud - 1534539', 'total': 1},
-        {'name': 'Abdullatif Khalaf Alshaib - 1530620', 'total': 4},
-        {'name': 'Abdulmohsen Ali Alqahtani - 275231', 'total': 1},
-        {'name': 'Abdulmonem Ahmed Mohmaed - 1636894', 'total': 1},
-        {'name': 'Abdulrahman Fahad Almuyif - 1369702', 'total': 1},
-    ]
-
-    blood_group_summary = [
-         {'component': 'APHERESIS', 'blood_group': 'A Positive', 'total': 13},
-         {'component': 'APHERESIS', 'blood_group': 'O Positive', 'total': 15},
-         {'component': 'Cryoprecipitate', 'blood_group': 'A Negative', 'total': 1},
-         {'component': 'Cryoprecipitate', 'blood_group': 'A Positive', 'total': 3},
-         {'component': 'Cryoprecipitate', 'blood_group': 'O Positive', 'total': 8},
-         {'component': 'Fresh Thawed Plasma', 'blood_group': 'A Negative', 'total': 5},
-         {'component': 'Fresh Thawed Plasma', 'blood_group': 'A Positive', 'total': 36},
-         {'component': 'Fresh Thawed Plasma', 'blood_group': 'AB Negative', 'total': 1},
-         {'component': 'Fresh Thawed Plasma', 'blood_group': 'AB Positive', 'total': 2},
-         {'component': 'Fresh Thawed Plasma', 'blood_group': 'B Negative', 'total': 2},
-         {'component': 'Fresh Thawed Plasma', 'blood_group': 'B Positive', 'total': 42},
-         {'component': 'Fresh Thawed Plasma', 'blood_group': 'O Negative', 'total': 8},
-         {'component': 'Fresh Thawed Plasma', 'blood_group': 'O Positive', 'total': 66},
-         {'component': 'Plat PC', 'blood_group': 'A Negative', 'total': 1},
-         {'component': 'Plat PC', 'blood_group': 'A Positive', 'total': 28},
-         {'component': 'Plat PC', 'blood_group': 'AB Positive', 'total': 6},
-         {'component': 'PRBC', 'blood_group': 'O Positive', 'total': 155}, # Sample data
-    ]
-
     return render(request, 'reports/issued_units_summary.html', {
-        'component_summary': component_summary,
-        'patient_summary': patient_summary,
-        'blood_group_summary': blood_group_summary,
+        'component_summary': [],
+        'patient_summary': [],
+        'blood_group_summary': [],
     })
 
 @staff_required
 def ortho_summary(request):
-    """
-    Ortho Report Summary view with mock data.
-    """
-    summary_data = [
-        {'date': '04 Jan 2026', 'abo': 49, 'abscr': 30, 'kell': 6, 'pheno': 6, 'rh': 49, 'xm': 24},
-        {'date': '05 Jan 2026', 'abo': 153, 'abscr': 102, 'igg': 7, 'kell': 95, 'pheno': 95, 'rh': 153, 'weak_d': 3, 'xm': 20},
-        {'date': '06 Jan 2026', 'abo': 228, 'abscr': 64, 'igg': 33, 'kell': 44, 'pheno': 44, 'rh': 228, 'weak_d': 4, 'xm': 24},
-        {'date': '07 Jan 2026', 'abo': 138, 'abscr': 52, 'igg': 5, 'kell': 31, 'pheno': 31, 'rh': 137, 'weak_d': 4, 'xm': 19},
-        {'date': '08 Jan 2026', 'abo': 129, 'abscr': 40, 'igg': 15, 'kell': 10, 'pheno': 10, 'rh': 129, 'weak_d': 3, 'xm': 35},
-        {'date': '09 Jan 2026', 'abo': 25, 'abscr': 9, 'igg': 9, 'rh': 25, 'xm': 24},
-        {'date': '10 Jan 2026', 'abo': 87, 'abscr': 30, 'igg': 7, 'kell': 14, 'pheno': 14, 'rh': 87, 'weak_d': 1, 'xm': 19},
-        {'date': '11 Jan 2026', 'abo': 106, 'abscr': 39, 'dil_series': 1, 'igg': 5, 'kell': 7, 'pheno': 7, 'rh': 106, 'weak_d': 1, 'xm': 42},
-        {'date': '12 Jan 2026', 'abo': 87, 'abscr': 27, 'igg': 14, 'kell': 13, 'pheno': 13, 'rh': 87, 'weak_d': 1, 'xm': 19},
-        {'date': '13 Jan 2026', 'abo': 139, 'abscr': 63, 'dil_series': 2, 'igg': 7, 'kell': 38, 'pheno': 38, 'rh': 139, 'weak_d': 3, 'xm': 18},
-        {'date': '14 Jan 2026', 'abo': 78, 'abscr': 24, 'ident': 1, 'igg': 5, 'kell': 3, 'pheno': 3, 'rh': 78, 'xm': 35},
-        {'date': '15 Jan 2026', 'abo': 90, 'abscr': 51, 'igg': 7, 'kell': 28, 'pheno': 28, 'poly': 3, 'rh': 90, 'weak_d': 2, 'xm': 22},
-        {'date': '16 Jan 2026', 'abo': 51, 'abscr': 12, 'igg': 3, 'kell': 2, 'pheno': 2, 'poly': 3, 'rh': 51, 'xm': 24},
-    ]
-
     return render(request, 'reports/ortho_summary.html', {
-        'summary_data': summary_data
+        'summary_data': []
     })
 
 @staff_required
 def ortho_results_smc1(request):
-    """
-    Ortho Results - SMC1 View.
-    """
-    results = [
-        {
-            'lab_id': '7955676W', 
-            'test_name': 'X-M new IgG', 
-            'results_lines': ['XM: <span class="font-bold">CMP</span>, Unit Number: H107726000407'], 
-            'result_date': '03/02/2026 04:19 AM'
-        },
-        {
-            'lab_id': '7955676W', 
-            'test_name': 'Newborn', 
-            'results_lines': ['ABO : <span class="font-bold">A</span>', 'Rh : <span class="font-bold">POS</span>', 'IgG : <span class="font-bold">NEG</span>'], 
-            'result_date': '03/02/2026 04:10 AM'
-        },
-        {
-            'lab_id': '7955690W', 
-            'test_name': 'X-M new IgG', 
-            'results_lines': ['XM: <span class="font-bold">CMP</span>, Unit Number: H107726000198', 'XM: <span class="font-bold">CMP</span>, Unit Number: H107726000192'], 
-            'result_date': '03/02/2026 03:06 AM'
-        },
-        {
-            'lab_id': '7955690W', 
-            'test_name': 'ABScr', 
-            'results_lines': ['ABScr : <span class="font-bold">NEG</span>'], 
-            'result_date': '03/02/2026 03:06 AM'
-        },
-        {
-            'lab_id': '7955690W', 
-            'test_name': 'ABO/Rh/Rev', 
-            'results_lines': ['ABO : <span class="font-bold">A</span>', 'Rh : <span class="font-bold">POS</span>'], 
-            'result_date': '03/02/2026 02:54 AM'
-        },
-        {
-            'lab_id': '7955598W', 
-            'test_name': 'X-M new IgG', 
-            'results_lines': ['XM: <span class="font-bold">CMP</span>, Unit Number: H107726000245', 'XM: <span class="font-bold">CMP</span>, Unit Number: H107726000250'], 
-            'result_date': '03/02/2026 02:10 AM'
-        },
-        {
-            'lab_id': '7955598W', 
-            'test_name': 'ABScr', 
-            'results_lines': ['ABScr : <span class="font-bold">NEG</span>'], 
-            'result_date': '03/02/2026 02:10 AM'
-        },
-        {
-            'lab_id': '3862186W', 
-            'test_name': 'X-M new IgG', 
-            'results_lines': ['XM: <span class="font-bold">CMP</span>, Unit Number: H107726000424'], 
-            'result_date': '03/02/2026 02:09 AM'
-        },
-        {
-            'lab_id': '7955598W', 
-            'test_name': 'ABO/Rh/Rev', 
-            'results_lines': ['ABO : <span class="font-bold">O</span>', 'Rh : <span class="font-bold">POS</span>'], 
-            'result_date': '03/02/2026 02:01 AM'
-        },
-         {
-            'lab_id': '3859290W', 
-            'test_name': 'ABScr', 
-            'results_lines': ['ABScr : <span class="font-bold">POS</span>'], 
-            'result_date': '03/02/2026 01:02 AM'
-        },
-    ]
     return render(request, 'reports/ortho_results.html', {
-        'results': results,
+        'results': [],
         'title': 'Ortho Results [ الفرع الأول ]'
     })
 
 @staff_required
 def ortho_results_smc2(request):
-    """
-    Ortho Results - SMC2 View.
-    """
-    # Using same data structure pattern, slightly different data could be used
-    results = [
-        {
-            'lab_id': '7955676W', 
-            'test_name': 'X-M new IgG', 
-            'results_lines': ['XM: <span class="font-bold">CMP</span>, Unit Number: H107726000407'], 
-            'result_date': '03/02/2026 04:19 AM'
-        },
-         {
-            'lab_id': '7955690W', 
-            'test_name': 'ABScr', 
-            'results_lines': ['ABScr : <span class="font-bold">NEG</span>'], 
-            'result_date': '03/02/2026 03:06 AM'
-        },
-    ]
     return render(request, 'reports/ortho_results.html', {
-        'results': results,
+        'results': [],
         'title': 'Ortho Results [ الفرع الثاني ]'
     })
 
 @staff_required
 def infinity_results(request):
-    """
-    Infinity Results View.
-    """
-    results = [
-        {
-            'lab_number': 'H107726000482', 'test_code': '2028', 'test_name': 'BB-ANTI HCV', 
-            'sample_type': 'SERUM', 'result': '0.046', 'result_date': '02/02/2026 12:00 PM',
-            'technician_name': 'KALBAKRI^Dr. Khaled', 'donor_name': 'MOHAMMED ALQARNI'
-        },
-        {
-            'lab_number': 'H107726000463', 'test_code': '2028', 'test_name': 'BB-ANTI HCV', 
-            'sample_type': 'SERUM', 'result': '0.046', 'result_date': '02/02/2026 09:27 AM',
-            'technician_name': 'KALBAKRI^Dr. Khaled', 'donor_name': 'SULTAN ALRAWALY'
-        },
-        {
-            'lab_number': 'H107726000467', 'test_code': '2028', 'test_name': 'BB-ANTI HCV', 
-            'sample_type': 'SERUM', 'result': '0.047', 'result_date': '02/02/2026 09:27 AM',
-            'technician_name': 'KALBAKRI^Dr. Khaled', 'donor_name': 'ABDULRAHMAN HARTHI'
-        },
-        {
-            'lab_number': 'H107726000472', 'test_code': '2028', 'test_name': 'BB-ANTI HCV', 
-            'sample_type': 'SERUM', 'result': '0.047', 'result_date': '02/02/2026 09:27 AM',
-            'technician_name': 'KALBAKRI^Dr. Khaled', 'donor_name': 'RUMAN MIAH'
-        },
-        {
-            'lab_number': 'H107726000494', 'test_code': '2028', 'test_name': 'BB-ANTI HCV', 
-            'sample_type': 'SERUM', 'result': '0.046', 'result_date': '02/02/2026 09:28 AM',
-            'technician_name': 'KALBAKRI^Dr. Khaled', 'donor_name': 'FERAS ALKHAYYAL'
-        },
-        {
-            'lab_number': 'H107726000476', 'test_code': '2028', 'test_name': 'BB-ANTI HCV', 
-            'sample_type': 'SERUM', 'result': '0.047', 'result_date': '02/02/2026 09:27 AM',
-            'technician_name': 'KALBAKRI^Dr. Khaled', 'donor_name': 'NORAH ALORWAN'
-        },
-        {
-            'lab_number': 'H107726000462', 'test_code': '2028', 'test_name': 'BB-ANTI HCV', 
-            'sample_type': 'SERUM', 'result': '0.045', 'result_date': '02/02/2026 09:27 AM',
-            'technician_name': 'KALBAKRI^Dr. Khaled', 'donor_name': 'SIRHAN MURAI'
-        },
-        {
-            'lab_number': 'H107726000475', 'test_code': '2040', 'test_name': 'BB-ANTI-HBs', 
-            'sample_type': 'SERUM', 'result': '1000', 'result_date': '02/02/2026 09:27 AM',
-            'technician_name': 'KALBAKRI^Dr. Khaled', 'donor_name': 'KAOSAR MIA'
-        },
-        {
-            'lab_number': 'H107726000482', 'test_code': '2029', 'test_name': 'BB-HIV p24 Ag / HIV-1&2 Ab (Combined Assay)', 
-            'sample_type': 'SERUM', 'result': '0.172', 'result_date': '02/02/2026 12:00 PM',
-            'technician_name': 'KALBAKRI^Dr. Khaled', 'donor_name': 'MOHAMMED ALQARNI'
-        },
-        {
-            'lab_number': 'H107726000482', 'test_code': '2027', 'test_name': 'BB-Anti HBV-CORE TOTAL', 
-            'sample_type': 'SERUM', 'result': '2.49', 'result_date': '02/02/2026 12:00 PM',
-            'technician_name': 'KALBAKRI^Dr. Khaled', 'donor_name': 'MOHAMMED ALQARNI'
-        },
-    ]
     return render(request, 'reports/infinity_results.html', {
-        'results': results,
+        'results': []
     })
 
 # Blood Order Process Views
