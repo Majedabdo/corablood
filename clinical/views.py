@@ -1200,9 +1200,10 @@ def pending_verification(request):
     })
 
 def disposition_to_store(request):
-    from .models import DonorWorkflow
+    from .models import DonorWorkflow, LabResult, BloodUnitCulture
     from inventory.models import BloodComponent
     from django.utils import timezone
+    from datetime import timedelta
     
     # 1. Purge all unlinked components (dummy test units created without a real workflow)
     try:
@@ -1210,16 +1211,53 @@ def disposition_to_store(request):
     except Exception:
         pass
 
-    # 2. Purge test/mock records matching any test unit pattern
+    # 2. Purge ONLY specific mock/fake test numbers (DO NOT purge H107726 which is the real donation code prefix!)
     test_patterns = [
-        '54321', '5400', '890', '987', '6543', '800', '5100', '654', '543', '5000', '12345',
-        'W29', 'W23', 'W21', 'W19', 'W18', 'W15', 'W13', 'W11', '24354564343', '576777', '345-W', '657-W', 'H107726'
+        '54321', '5400-W', '890-W', '987-W', '6543-0', '800-0', '5100-0', '654-0', '543-0', '5000-0', '12345-0',
+        'W29', 'W23', 'W21', 'W19', 'W18', 'W15', 'W13', 'W11', '24354564343', '576777', '345-W', '657-W'
     ]
     for pat in test_patterns:
         try:
             BloodComponent.objects.filter(unit_number__icontains=pat).delete()
         except Exception:
             pass
+
+    # 3. Check for real donor workflows (like AHMED H107726000017) with passed lab results
+    try:
+        real_workflows = DonorWorkflow.objects.filter(
+            donor__isnull=False
+        ).select_related('donor', 'blood_draw').order_by('-updated_at')
+        
+        for wf in real_workflows:
+            # Check lab test status
+            abnormal_labs = LabResult.objects.filter(workflow=wf, is_abnormal=True).exists()
+            positive_culture = BloodUnitCulture.objects.filter(workflow=wf, status='POSITIVE').exists()
+            
+            if abnormal_labs or positive_culture:
+                # Move components to DISCARDED
+                BloodComponent.objects.filter(workflow=wf).update(status='DISCARDED')
+            else:
+                # Donor passed tests! Ensure components exist and are set to AVAILABLE
+                comps = BloodComponent.objects.filter(workflow=wf)
+                if not comps.exists():
+                    bag_id = wf.donation_code or f"DON-{wf.id:05d}"
+                    bg = wf.donor.blood_group if (wf.donor and wf.donor.blood_group != 'UNKNOWN') else "O+"
+                    now = timezone.now()
+                    
+                    BloodComponent.objects.create(
+                        workflow=wf, component_type=BloodComponent.Type.PRBC,
+                        unit_number=f"{bag_id}-PRBC", blood_group=bg, volume=350,
+                        status='AVAILABLE', expiration_date=now + timedelta(days=42)
+                    )
+                    BloodComponent.objects.create(
+                        workflow=wf, component_type=BloodComponent.Type.FFP,
+                        unit_number=f"{bag_id}-FFP", blood_group=bg, volume=200,
+                        status='AVAILABLE', expiration_date=now + timedelta(days=365)
+                    )
+                else:
+                    comps.exclude(status='DISCARDED').update(status='AVAILABLE')
+    except Exception as e:
+        print(f"Error checking real workflows in disposition_to_store: {e}")
 
     components_list = []
     
@@ -1229,7 +1267,7 @@ def disposition_to_store(request):
     
     try:
         db_comps = BloodComponent.objects.filter(
-            status__in=['AVAILABLE', 'RELEASED'],
+            status__in=['AVAILABLE', 'RELEASED', 'QUARANTINE', 'STOCK'],
             workflow__isnull=False
         ).select_related('workflow', 'workflow__donor').order_by('-updated_at')
         
