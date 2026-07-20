@@ -1204,8 +1204,17 @@ def disposition_to_store(request):
     from inventory.models import BloodComponent
     from django.utils import timezone
     
-    # Purge test/mock records from DB if they exist
-    test_patterns = ['W29', 'W23', 'W21', 'W19', '24354564343', '576777', '345-W', '657-W', 'H107726']
+    # 1. Purge all unlinked components (dummy test units created without a real workflow)
+    try:
+        BloodComponent.objects.filter(workflow__isnull=True).delete()
+    except Exception:
+        pass
+
+    # 2. Purge test/mock records matching any test unit pattern
+    test_patterns = [
+        '54321', '5400', '890', '987', '6543', '800', '5100', '654', '543', '5000', '12345',
+        'W29', 'W23', 'W21', 'W19', 'W18', 'W15', 'W13', 'W11', '24354564343', '576777', '345-W', '657-W', 'H107726'
+    ]
     for pat in test_patterns:
         try:
             BloodComponent.objects.filter(unit_number__icontains=pat).delete()
@@ -1220,15 +1229,16 @@ def disposition_to_store(request):
     
     try:
         db_comps = BloodComponent.objects.filter(
-            status__in=['AVAILABLE', 'RELEASED']
+            status__in=['AVAILABLE', 'RELEASED'],
+            workflow__isnull=False
         ).select_related('workflow', 'workflow__donor').order_by('-updated_at')
         
         for comp in db_comps:
             wf = comp.workflow
             bag_code = comp.unit_number
             try:
-                if wf and hasattr(wf, 'blood_draw') and wf.blood_draw:
-                    bag_code = wf.blood_draw.bag_serial_number or bag_code
+                if wf and hasattr(wf, 'blood_draw') and wf.blood_draw and wf.blood_draw.bag_serial_number:
+                    bag_code = wf.blood_draw.bag_serial_number
             except Exception:
                 pass
                 
