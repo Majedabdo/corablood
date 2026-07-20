@@ -185,48 +185,33 @@
                         <td class="px-6 py-5 text-xs font-bold text-slate-700">{{ item.blood_group }}</td>
                         <td class="px-6 py-5 text-center text-xs text-slate-600 font-medium">{{ item.qty }}</td>
                         <td class="px-6 py-5 text-center">
-                            <span
-                                class="bg-[#10B981] text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-sm shadow-emerald-200">{{
-                                item.volume }}</span>
+                            <span class="bg-[#10B981] text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-sm shadow-emerald-200">{{ item.volume }}</span>
                         </td>
                         <td class="px-6 py-5 text-center text-xs text-slate-300">{{ item.volume_issued }}</td>
                         <td class="px-6 py-5 text-xs text-slate-600 font-mono">
                             {% if item.rr != '-' %}
                             <div class="flex flex-col items-center leading-tight">
-                                <span>{{ item.rr|slice:":2" }} :</span>
-                                <span>{{ item.rr|slice:"-2:" }}</span>
+                                <span>{{ item.rr }}</span>
                             </div>
                             {% else %}
                             <span class="text-center block text-slate-300">-</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-5 text-xs text-slate-600 font-medium">{{ item.expire_date|date:"d/m/Y" }}
-                        </td>
-                        <td class="px-6 py-5 text-xs text-slate-600 w-24 whitespace-normal font-medium">{{
-                            item.temperature }}</td>
-                        <td class="px-6 py-5 text-xs text-slate-400 italic">Unassigned</td>
+                        <td class="px-6 py-5 text-xs text-slate-600 font-medium">{{ item.expire_date|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-5 text-xs text-slate-600 w-24 whitespace-normal font-medium">{{ item.temperature }}</td>
+                        <td class="px-6 py-5 text-xs text-slate-400 italic">{{ item.location }}</td>
 
                         <!-- Status -->
                         <td class="px-6 py-5 text-left align-top">
                             {% if item.status == 'Discarded' %}
-                            <div
-                                class="bg-[#EF4444] text-white text-[10px] font-bold px-2 py-1 rounded inline-block shadow-sm shadow-red-200 mb-2">
-                                Discarded</div>
+                            <div class="bg-[#EF4444] text-white text-[10px] font-bold px-2 py-1 rounded inline-block shadow-sm shadow-red-200 mb-2">Discarded</div>
                             <div class="text-[10px] text-slate-500 flex flex-col gap-0.5 leading-snug">
-                                <span class="text-slate-400">On : <span class="text-slate-600 font-medium">{{
-                                        item.done_date|slice:":10" }}</span></span>
-                                <span class="text-slate-600 font-medium">11:19 PM</span>
-                                <span class="text-slate-400">By : <span
-                                        class="text-slate-600 font-medium whitespace-nowrap">{{ item.done_by|slice:":11"
-                                        }}</span></span>
-                                <span class="text-slate-600 whitespace-nowrap">{{ item.done_by|slice:"12:" }}</span>
-                                <span class="text-slate-400">Note : <span class="text-slate-600 font-medium">{{
-                                        item.note }}</span></span>
+                                <span class="text-slate-400">On : <span class="text-slate-600 font-medium">{{ item.done_date }}</span></span>
+                                <span class="text-slate-400">By : <span class="text-slate-600 font-medium whitespace-nowrap">{{ item.done_by }}</span></span>
+                                <span class="text-slate-400">Note : <span class="text-slate-600 font-medium">{{ item.note }}</span></span>
                             </div>
                             {% else %}
-                            <div
-                                class="bg-emerald-50 text-emerald-600 border border-emerald-100 text-[10px] font-bold px-2 py-1 rounded inline-block">
-                                Stock</div>
+                            <div class="bg-emerald-50 text-emerald-600 border border-emerald-100 text-[10px] font-bold px-2 py-1 rounded inline-block">Stock</div>
                             {% endif %}
                         </td>
 
@@ -235,18 +220,14 @@
                             {% if item.verification == 'Discarded' %}
                             <div class="flex items-center text-xs text-[#10B981] font-bold mb-2">
                                 <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                        d="M5 13l4 4L19 7" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                                 </svg>
                                 Discarded
                             </div>
                             <div class="text-[10px] text-slate-500 flex flex-col gap-0.5 leading-snug">
                                 <span class="text-slate-600 font-medium">Verify 1</span>
-                                <span class="text-slate-400">By : <span class="text-slate-600 font-medium">{{
-                                        item.verification_by }}</span></span>
-                                <span class="text-slate-400">On : <span class="text-slate-600 font-medium">{{
-                                        item.verification_date|slice:":10" }}</span></span>
-                                <span class="text-slate-600 font-medium">11:19 PM</span>
+                                <span class="text-slate-400">By : <span class="text-slate-600 font-medium">{{ item.verification_by }}</span></span>
+                                <span class="text-slate-400">On : <span class="text-slate-600 font-medium">{{ item.verification_date }}</span></span>
                             </div>
                             {% else %}
                             <span class="text-xs text-slate-300 block mt-1">-</span>
@@ -256,22 +237,17 @@
                         <!-- Date -->
                         <td class="px-6 py-5 text-[10px] text-slate-500 leading-snug align-top">
                             <div class="mb-1">
-                                <span class="text-slate-400">DoneBy:</span> <span
-                                    class="font-medium text-slate-700 block">{{ item.done_by|slice:":11" }}</span>
-                                <span class="text-slate-600 block">{{ item.done_by|slice:"12:" }}</span>
+                                <span class="text-slate-400">DoneBy:</span> <span class="font-medium text-slate-700 block">{{ item.done_by }}</span>
                             </div>
                             <div class="mb-2">
                                 <span class="text-slate-400">DoneDate:</span>
-                                <span class="text-slate-600 block">{{ item.done_date|slice:":10" }}</span>
-                                <span class="text-slate-600 block">11:19 PM</span>
+                                <span class="text-slate-600 block">{{ item.done_date }}</span>
                             </div>
                             <div>
-                                <span class="text-slate-400">ModifiedBy:</span> <span class="text-slate-600">{{
-                                    item.modified_by }}</span>
+                                <span class="text-slate-400">ModifiedBy:</span> <span class="text-slate-600">{{ item.modified_by }}</span>
                             </div>
                             <div>
-                                <span class="text-slate-400">ModifiedDate:</span> <span class="text-slate-600">{{
-                                    item.modified_date }}</span>
+                                <span class="text-slate-400">ModifiedDate:</span> <span class="text-slate-600">{{ item.modified_date }}</span>
                             </div>
                         </td>
 

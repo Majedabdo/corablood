@@ -1306,43 +1306,76 @@ def store_report(request):
     })
 
 def component_details(request):
-    from datetime import timedelta
+    from inventory.models import BloodComponent
     from django.utils import timezone
     
+    test_patterns = ['W29', 'W23', 'W21', 'W19', '24354564343', '576777', '345-W', '657-W', 'H107726']
+    for pat in test_patterns:
+        try:
+            BloodComponent.objects.filter(unit_number__icontains=pat).delete()
+        except Exception:
+            pass
+
     components = []
-    comp_types = ['PLAT_PC', 'FFP', 'PRBC', 'APHERESIS']
-    bg_types = ['O+', 'A+', 'B+', 'AB+']
+    req_type = request.GET.get('component_type')
+    req_bg = request.GET.get('blood_group')
+    req_status = request.GET.get('status')
+    req_code = request.GET.get('donation_code')
     
-    for i in range(10):
-        c_type = comp_types[i % 4]
-        bg = bg_types[i % 4]
-        status = 'Discarded' if i % 2 == 0 else 'Stock'
-        is_discarded = (status == 'Discarded')
+    try:
+        db_comps = BloodComponent.objects.select_related('workflow', 'workflow__donor', 'modified_by').order_by('-updated_at')
         
-        components.append({
-            'index': 51625 - i,
-            'donation_code': f"H10772600045{i}",
-            'source': 'SMC',
-            'component_type': c_type,
-            'blood_group': bg,
-            'qty': 1,
-            'volume': 30 if c_type == 'PLAT_PC' else (150 if c_type == 'FFP' else 300),
-            'volume_issued': '-',
-            'rr': '30 : 70' if c_type == 'PLAT_PC' else ('150 : 220' if c_type == 'FFP' else '-'),
-            'expire_date': timezone.now() + timedelta(days=365 if c_type == 'FFP' else 5),
-            'temperature': '20-24' if c_type == 'PLAT_PC' else ('Less than or equal -18' if c_type == 'FFP' else '2-6'),
-            'location': '', 
-            'status': status,
-            'verification': 'Discarded' if is_discarded else 'Verified',
-            'verification_by': 'F-AYED',
-            'verification_date': '31/01/2026 11:19 PM',
-            'done_by': 'Faisal Ayed Alotaibi',
-            'done_date': '31/01/2026 11:19 PM',
-            'modified_by': '',
-            'modified_date': '',
-            'note': 'Lipemic' if is_discarded else ''
-        })
-        
+        for comp in db_comps:
+            wf = comp.workflow
+            bag_code = comp.unit_number
+            try:
+                if wf and hasattr(wf, 'blood_draw') and wf.blood_draw and wf.blood_draw.bag_serial_number:
+                    bag_code = wf.blood_draw.bag_serial_number
+            except Exception:
+                pass
+                
+            if any(pat in bag_code for pat in test_patterns):
+                continue
+
+            c_type = comp.get_component_type_display() if hasattr(comp, 'get_component_type_display') else comp.component_type
+            b_group = comp.blood_group or (wf.donor.blood_group if (wf and wf.donor) else 'O+')
+            
+            # Filtering
+            if req_type and req_type != 'All Component Type' and req_type not in c_type:
+                continue
+            if req_bg and req_bg != 'All BloodGroups' and req_bg != b_group:
+                continue
+            if req_status and req_status != 'All Status' and req_status.upper() not in comp.status.upper():
+                continue
+            if req_code and req_code.strip() and req_code.strip().lower() not in bag_code.lower():
+                continue
+
+            components.append({
+                'index': comp.id,
+                'donation_code': bag_code,
+                'source': 'SMC Main Bank',
+                'component_type': c_type,
+                'blood_group': b_group,
+                'qty': 1,
+                'volume': comp.volume or 300,
+                'volume_issued': '-',
+                'rr': '30 : 70' if comp.component_type in ['PLT', 'PLAT_PC'] else ('150 : 220' if comp.component_type == 'FFP' else '-'),
+                'expire_date': comp.expiration_date,
+                'temperature': '20-24°C' if comp.component_type in ['PLT', 'APHERESIS', 'PLAT_PC'] else ('-18°C' if comp.component_type == 'FFP' else '2-6°C'),
+                'location': comp.location or 'Unassigned', 
+                'status': 'Discarded' if comp.status == 'DISCARDED' else 'Stock',
+                'verification': 'Discarded' if comp.status == 'DISCARDED' else 'Verified',
+                'verification_by': 'Quality Officer',
+                'verification_date': comp.updated_at.strftime('%d/%m/%Y %I:%M %p') if comp.updated_at else '---',
+                'done_by': comp.modified_by.username if (comp.modified_by and hasattr(comp.modified_by, 'username')) else 'System Specialist',
+                'done_date': comp.updated_at.strftime('%d/%m/%Y %I:%M %p') if comp.updated_at else timezone.now().strftime('%d/%m/%Y %I:%M %p'),
+                'modified_by': '',
+                'modified_date': '',
+                'note': comp.notes or ''
+            })
+    except Exception as e:
+        print(f"Error loading db_comps in component_details: {e}")
+
     return render(request, 'reports/component_details.html', {
         'components': components
     })
