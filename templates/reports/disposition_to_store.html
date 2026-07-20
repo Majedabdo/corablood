@@ -2,247 +2,214 @@
 
 {% block title %}Disposition To Store | CoraBlood AI{% endblock %}
 {% block header %}
-<span x-text="lang === 'en' ? 'Screened Components' : 'المكونات المفحوصة'"></span>
+<span x-text="lang === 'en' ? 'Screened Components' : 'المكونات المفحوصة والمعتمدة'"></span>
 {% endblock %}
 
 {% block content %}
-<div class="space-y-8">
+<div class="max-w-full space-y-6">
 
-    <!-- Filters Section based on screenshot -->
-    <div
-        class="bg-white rounded-xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-slate-100 p-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-8">
-            <!-- Row 1 -->
-            <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Component Type</label>
-                <div class="relative">
-                    <select
-                        class="appearance-none w-full rounded-lg border-slate-200 text-slate-700 text-sm px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:ring-2 focus:ring-slate-200 focus:border-slate-400 focus:bg-white transition-all cursor-pointer">
-                        <option>All Component Type</option>
-                        <option>PRBC</option>
-                        <option>FFP</option>
-                        <option>Platelets</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </div>
+    <!-- Header & Action Summary -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200/60">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-600 shadow-sm">
+                    <i class="fas fa-box-archive text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 tracking-tight" x-text="lang === 'en' ? 'Disposition To Store' : 'اعتماد التخزين في البنك'">Disposition To Store</h1>
+                    <p class="text-xs text-slate-500 font-medium" x-text="lang === 'en' ? 'Screened blood components ready for inventory placement' : 'مكونات الدم المفحوصة الجاهزة للنقل للمخزن الرئيسي'"></p>
                 </div>
             </div>
-
-            <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Blood Group</label>
-                <div class="relative">
-                    <select
-                        class="appearance-none w-full rounded-lg border-slate-200 text-slate-700 text-sm px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:ring-2 focus:ring-slate-200 focus:border-slate-400 focus:bg-white transition-all cursor-pointer">
-                        <option>All BloodGroups</option>
-                        <option>O+</option>
-                        <option>O-</option>
-                        <option>A+</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Pheno Type</label>
-                <div class="relative">
-                    <select
-                        class="appearance-none w-full rounded-lg border-slate-200 text-slate-700 text-sm px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:ring-2 focus:ring-slate-200 focus:border-slate-400 focus:bg-white transition-all cursor-pointer">
-                        <option>All Pheno Types</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Row 2 -->
-            <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</label>
-                <div class="relative">
-                    <select
-                        class="appearance-none w-full rounded-lg border-slate-200 text-slate-700 text-sm px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:ring-2 focus:ring-slate-200 focus:border-slate-400 focus:bg-white transition-all cursor-pointer">
-                        <option>Screened</option>
-                        <option>Quarantine</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Site</label>
-                <div class="relative">
-                    <select
-                        class="appearance-none w-full rounded-lg border-slate-200 text-slate-700 text-sm px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:ring-2 focus:ring-slate-200 focus:border-slate-400 focus:bg-white transition-all cursor-pointer">
-                        <option value="SMC1">الفرع الأول</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
-                            </path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Donation</label>
-                <div class="flex items-center gap-3">
-                    <button
-                        class="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold py-2.5 px-4 rounded-lg shadow-sm shadow-orange-200 transition-all active:scale-[0.98]">
-                        Select Donation
-                    </button>
-                    <button
-                        class="text-slate-400 text-sm hover:text-slate-600 px-2 flex items-center gap-1 transition-colors">
-                        <i class="fas fa-times text-xs"></i> reset
-                    </button>
-                </div>
-            </div>
-
-            <!-- Row 3 -->
-            <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Donation code</label>
-                <input type="text" placeholder="Donation Code"
-                    class="w-full rounded-lg border-slate-200 text-slate-700 text-sm px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:ring-2 focus:ring-slate-200 focus:border-slate-400 focus:bg-white transition-all placeholder:text-slate-400">
-            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/60 text-emerald-700 text-xs font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span x-text="lang === 'en' ? 'Live Inventory Sync' : 'مزامنة المخزن مباشرة'"></span>
+            </span>
         </div>
     </div>
 
-    <!-- Table Section -->
-    <div
-        class="bg-white rounded-xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-slate-100 overflow-hidden">
+    <!-- Main Unified Container (No separate boxes) -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-all">
+        
+        <!-- Integrated Filter Bar -->
+        <div class="bg-slate-50/70 p-5 border-b border-slate-200/70">
+            <form method="GET" action="" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    
+                    <!-- Component Type -->
+                    <div class="space-y-1">
+                        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Component Type</label>
+                        <select name="component_type" onchange="this.form.submit()"
+                            class="w-full rounded-lg border-slate-200 text-slate-700 text-xs py-2 px-3 bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer">
+                            <option value="All Component Type">All Component Type</option>
+                            <option value="PRBC" {% if request.GET.component_type == 'PRBC' %}selected{% endif %}>Packed Red Blood Cells (PRBC)</option>
+                            <option value="FFP" {% if request.GET.component_type == 'FFP' %}selected{% endif %}>Fresh Frozen Plasma (FFP)</option>
+                            <option value="Platelets" {% if request.GET.component_type == 'Platelets' %}selected{% endif %}>Platelets (PLT)</option>
+                            <option value="Cryo" {% if request.GET.component_type == 'Cryo' %}selected{% endif %}>Cryoprecipitate</option>
+                        </select>
+                    </div>
+
+                    <!-- Blood Group -->
+                    <div class="space-y-1">
+                        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Blood Group</label>
+                        <select name="blood_group" onchange="this.form.submit()"
+                            class="w-full rounded-lg border-slate-200 text-slate-700 text-xs py-2 px-3 bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer">
+                            <option value="All BloodGroups">All BloodGroups</option>
+                            <option value="O+" {% if request.GET.blood_group == 'O+' %}selected{% endif %}>O+</option>
+                            <option value="O-" {% if request.GET.blood_group == 'O-' %}selected{% endif %}>O-</option>
+                            <option value="A+" {% if request.GET.blood_group == 'A+' %}selected{% endif %}>A+</option>
+                            <option value="A-" {% if request.GET.blood_group == 'A-' %}selected{% endif %}>A-</option>
+                            <option value="B+" {% if request.GET.blood_group == 'B+' %}selected{% endif %}>B+</option>
+                            <option value="B-" {% if request.GET.blood_group == 'B-' %}selected{% endif %}>B-</option>
+                            <option value="AB+" {% if request.GET.blood_group == 'AB+' %}selected{% endif %}>AB+</option>
+                            <option value="AB-" {% if request.GET.blood_group == 'AB-' %}selected{% endif %}>AB-</option>
+                        </select>
+                    </div>
+
+                    <!-- Pheno Type -->
+                    <div class="space-y-1">
+                        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pheno Type</label>
+                        <select class="w-full rounded-lg border-slate-200 text-slate-700 text-xs py-2 px-3 bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer">
+                            <option>All Pheno Types</option>
+                        </select>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="space-y-1">
+                        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</label>
+                        <select class="w-full rounded-lg border-slate-200 text-slate-700 text-xs py-2 px-3 bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer">
+                            <option>Screened</option>
+                        </select>
+                    </div>
+
+                    <!-- Site -->
+                    <div class="space-y-1">
+                        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Site</label>
+                        <select class="w-full rounded-lg border-slate-200 text-slate-700 text-xs py-2 px-3 bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer">
+                            <option value="SMC">الفرع الرئيسي</option>
+                        </select>
+                    </div>
+
+                    <!-- Donation Code Search -->
+                    <div class="space-y-1">
+                        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Donation Code</label>
+                        <div class="relative">
+                            <input type="text" name="donation_code" value="{{ request.GET.donation_code|default:'' }}" placeholder="Search Code..."
+                                class="w-full rounded-lg border-slate-200 text-slate-700 text-xs py-2 pl-3 pr-8 bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all placeholder:text-slate-400">
+                            <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-500">
+                                <i class="fas fa-search text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Action Toolbar Footer -->
+                <div class="flex items-center justify-between pt-2 border-t border-slate-200/50">
+                    <div class="text-xs text-slate-500 font-medium">
+                        Found <span class="font-bold text-slate-700">{{ components|length }}</span> screened unit(s)
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <a href="?" class="text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1">
+                            <i class="fas fa-rotate-left text-[10px]"></i> Reset Filters
+                        </a>
+                        <button type="submit" class="bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm shadow-orange-500/20 transition-all flex items-center gap-2">
+                            <i class="fas fa-filter text-xs"></i> Apply Filter
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Table Section -->
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-100 whitespace-nowrap">
-                <thead class="bg-slate-50/80">
-                    <tr>
-                        <th class="px-5 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">#
-                        </th>
-                        <th class="px-5 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            Donation</th>
-                        <th class="px-5 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            Source</th>
-                        <th class="px-5 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            ComponentType</th>
-                        <th class="px-5 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            BloodGroup</th>
-                        <th class="px-5 py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            Qty</th>
-                        <th class="px-5 py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            Volume</th>
-                        <th class="px-5 py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            Volume Issued</th>
-                        <th class="px-5 py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            RR</th>
-                        <th class="px-5 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            ExpireDate</th>
-                        <th class="px-5 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            Temprature</th>
-                        <th class="px-5 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            Storage Location</th>
-                        <th class="px-5 py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            Status</th>
-                        <th class="px-5 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            Verification</th>
-                        <th class="px-5 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            Date</th>
-                        <th class="px-5 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            Actions</th>
+            <table class="w-full text-left border-collapse whitespace-nowrap">
+                <thead>
+                    <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <th class="py-3.5 px-4">#</th>
+                        <th class="py-3.5 px-4">Donation Code</th>
+                        <th class="py-3.5 px-4">Source</th>
+                        <th class="py-3.5 px-4">Component Type</th>
+                        <th class="py-3.5 px-4">Blood Group</th>
+                        <th class="py-3.5 px-4 text-center">Qty</th>
+                        <th class="py-3.5 px-4 text-center">Volume</th>
+                        <th class="py-3.5 px-4 text-center">Volume Issued</th>
+                        <th class="py-3.5 px-4 text-center">RR</th>
+                        <th class="py-3.5 px-4">Expire Date</th>
+                        <th class="py-3.5 px-4">Temperature</th>
+                        <th class="py-3.5 px-4">Storage Location</th>
+                        <th class="py-3.5 px-4 text-center">Status</th>
+                        <th class="py-3.5 px-4">Verification</th>
+                        <th class="py-3.5 px-4">Date</th>
+                        <th class="py-3.5 px-4 text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-50">
+                <tbody class="divide-y divide-slate-100 text-xs">
                     {% for item in components %}
-                    <tr class="hover:bg-slate-50 transition-colors group">
-                        <td class="px-5 py-4 text-xs font-mono text-slate-400">{{ item.id }}</td>
-                        <td class="px-5 py-4 text-xs font-mono font-medium text-slate-600">{{ item.donation_code }}</td>
-                        <td class="px-5 py-4 text-xs text-slate-600">SMC</td>
-                        <td class="px-5 py-4 text-xs font-medium text-slate-700">{{ item.component_type }}</td>
-                        <td class="px-5 py-4 text-xs font-bold text-slate-700">{{ item.blood_group }}</td>
-                        <td class="px-5 py-4 text-center text-xs text-slate-600">1</td>
-                        <td class="px-5 py-4 text-center">
-                            <span class="bg-emerald-500 text-white text-[11px] font-bold px-2 py-0.5 rounded shadow-sm shadow-emerald-200">{{ item.volume }}</span>
+                    <tr class="hover:bg-slate-50/80 transition-colors group">
+                        <td class="py-3.5 px-4 font-mono font-medium text-slate-400">{{ item.id }}</td>
+                        <td class="py-3.5 px-4 font-mono font-bold text-slate-800">{{ item.donation_code }}</td>
+                        <td class="py-3.5 px-4 text-slate-600 font-medium">الفرع الرئيسي</td>
+                        <td class="py-3.5 px-4 font-semibold text-slate-700">{{ item.component_type }}</td>
+                        <td class="py-3.5 px-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-rose-50 border border-rose-200 text-rose-700">
+                                {{ item.blood_group }}
+                            </span>
                         </td>
-                        <td class="px-5 py-4 text-center text-xs text-slate-300">-</td>
-                        <td class="px-5 py-4 text-xs text-slate-400 text-center font-mono">
-                            30 : 70
+                        <td class="py-3.5 px-4 text-center text-slate-600 font-medium">1</td>
+                        <td class="py-3.5 px-4 text-center">
+                            <span class="bg-emerald-500 text-white text-[11px] font-bold px-2 py-0.5 rounded shadow-sm shadow-emerald-200">{{ item.volume }} mL</span>
                         </td>
-                        <td class="px-5 py-4 text-xs text-slate-600">{{ item.expire_date|date:"d/m/Y" }}</td>
-                        <td class="px-5 py-4 text-xs text-slate-600">
+                        <td class="py-3.5 px-4 text-center text-slate-300">-</td>
+                        <td class="py-3.5 px-4 text-center font-mono text-slate-500">30 : 70</td>
+                        <td class="py-3.5 px-4 text-slate-600 font-medium">{{ item.expire_date|date:"d/m/Y" }}</td>
+                        <td class="py-3.5 px-4 text-slate-600">
                             {% if item.component_type == 'FFP' %}
-                            Less than or equal -18
+                            &le; -18°C
                             {% else %}
-                            20-24
+                            20-24°C
                             {% endif %}
                         </td>
-                        <td class="px-5 py-4 text-xs text-slate-500">
+                        <td class="py-3.5 px-4 text-slate-500">
                             {% if item.component_type == 'FFP' %}
-                            D1 un-screened Freezer
+                            D1 Freezer
                             {% else %}
-                            (PA-1) un-screened Agitator
+                            (PA-1) Agitator
                             {% endif %}
                         </td>
-                        <td class="px-5 py-4 text-center">
-                            <span
-                                class="bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-1 rounded">Screened</span>
-                            <div class="text-[9px] text-slate-400 mt-1.5 flex flex-col gap-0.5">
-                                <span>On: {{ item.created_at|date:"d/m/Y" }}</span>
-                                <span>By: System</span>
-                            </div>
+                        <td class="py-3.5 px-4 text-center">
+                            <span class="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+                                <i class="fas fa-check-circle text-[9px]"></i> Screened
+                            </span>
                         </td>
-                        <td class="px-5 py-4">
-                            <div class="flex items-center text-xs text-emerald-600 font-bold mb-2">
-                                <svg class="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M5 13l4 4L19 7" />
-                                </svg>
-                                Component Verified
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center text-emerald-600 font-bold gap-1 mb-1">
+                                <i class="fas fa-shield-check text-xs"></i> Verified
                             </div>
-                            <div class="flex items-center text-xs">
-                                <button
-                                    class="bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded shadow-sm hover:bg-emerald-600 transition-colors">
-                                    Review And Approve
-                                </button>
-                            </div>
+                            <button class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2.5 py-1 rounded shadow-sm transition-colors">
+                                Review & Approve
+                            </button>
                         </td>
-                        <td class="px-5 py-4 text-[10px] text-slate-500 leading-relaxed">
-                            <div class="font-medium text-slate-600">DoneBy: Khalid</div>
-                            <div>Date: {{ item.created_at|date:"d/m/Y" }}</div>
+                        <td class="py-3.5 px-4 text-slate-500 text-[11px]">
+                            <div class="font-semibold text-slate-700">DoneBy: Khalid</div>
+                            <div class="text-slate-400">{{ item.created_at|date:"d/m/Y" }}</div>
                         </td>
-                        <td class="px-5 py-4 text-right">
-                            <button
-                                class="bg-sky-600 text-white text-[11px] font-bold px-4 py-2 rounded-lg shadow-sm hover:bg-sky-700 transition-colors">
-                                Disposition To Store
+                        <td class="py-3.5 px-4 text-right">
+                            <button class="bg-sky-600 hover:bg-sky-700 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all flex items-center gap-1.5 ml-auto">
+                                <i class="fas fa-warehouse text-[10px]"></i> Send To Store
                             </button>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="16" class="px-6 py-20 text-center">
-                            <div class="flex flex-col items-center justify-center">
-                                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24"
-                                        stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                                    </svg>
+                        <td colspan="16" class="py-16 px-6 text-center bg-white">
+                            <div class="max-w-sm mx-auto flex flex-col items-center justify-center">
+                                <div class="w-14 h-14 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center mb-3 text-slate-300 shadow-inner">
+                                    <i class="fas fa-box-open text-2xl"></i>
                                 </div>
-                                <h3 class="text-slate-900 font-medium mb-1">No screened components found</h3>
-                                <p class="text-slate-500 text-sm">Adjust your filters to see results.</p>
+                                <h3 class="text-sm font-bold text-slate-800 mb-1" x-text="lang === 'en' ? 'No Screened Components Found' : 'لا توجد مكونات دموية معتمدة'">No Screened Components Found</h3>
+                                <p class="text-xs text-slate-400 text-center leading-relaxed" x-text="lang === 'en' ? 'Approved components from lab screening tests will appear here automatically.' : 'المكونات المعتمدة من نتائج فحوصات المختبر ستظهر هنا تلقائياً.'">Approved components from lab screening tests will appear here automatically.</p>
                             </div>
                         </td>
                     </tr>
@@ -250,6 +217,8 @@
                 </tbody>
             </table>
         </div>
+        
     </div>
+
 </div>
 {% endblock %}
