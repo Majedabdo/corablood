@@ -1203,19 +1203,22 @@ def disposition_to_store(request):
     from .models import DonorWorkflow
     from inventory.models import BloodComponent
     
-    # 1. Purge ONLY specific mock/fake test patterns
+    # 1. Purge specific old mock/test donation codes (H107726000001 to H107726000016) stored in Render DB
+    old_test_codes = [f"H107726{i:06d}" for i in range(1, 17)]
     fake_patterns = [
         '54321', '5400-W', '890-W', '987-W', '6543-0', '800-0', '5100-0', '654-0', '543-0', '5000-0', '12345-0',
         'W29', 'W23', 'W21', 'W19', 'W18', 'W15', 'W13', 'W11', '24354564343', '576777', '345-W', '657-W',
         'DON-', 'CB-0010', 'CB-0011', 'CB-0012'
-    ]
+    ] + old_test_codes
+
     for pat in fake_patterns:
         try:
             BloodComponent.objects.filter(unit_number__icontains=pat).delete()
+            BloodComponent.objects.filter(workflow__donation_code__icontains=pat).delete()
         except Exception:
             pass
 
-    # Purge unlinked components created without explicit workflow or created by auto-sync loop for old test workflows
+    # Purge unlinked components created without explicit workflow
     try:
         BloodComponent.objects.filter(workflow__isnull=True).delete()
     except Exception:
