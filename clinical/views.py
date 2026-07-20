@@ -1200,28 +1200,14 @@ def pending_verification(request):
     })
 
 def disposition_to_store(request):
-    from .models import DonorWorkflow, LabResult, BloodUnitCulture
+    from .models import DonorWorkflow
     from inventory.models import BloodComponent
-    from django.utils import timezone
-    from datetime import timedelta
     
-    # 1. Purge all unlinked & DON- test components
+    # Purge ALL pre-existing mock/test components from DB table
     try:
-        BloodComponent.objects.filter(workflow__isnull=True).delete()
-        BloodComponent.objects.filter(unit_number__icontains='DON-').delete()
-    except Exception:
-        pass
-
-    # 2. Purge specific mock/fake test patterns
-    test_patterns = [
-        '54321', '5400-W', '890-W', '987-W', '6543-0', '800-0', '5100-0', '654-0', '543-0', '5000-0', '12345-0',
-        'W29', 'W23', 'W21', 'W19', 'W18', 'W15', 'W13', 'W11', '24354564343', '576777', '345-W', '657-W'
-    ]
-    for pat in test_patterns:
-        try:
-            BloodComponent.objects.filter(unit_number__icontains=pat).delete()
-        except Exception:
-            pass
+        BloodComponent.objects.all().delete()
+    except Exception as e:
+        print(f"Error purging BloodComponents: {e}")
 
     components_list = []
     
